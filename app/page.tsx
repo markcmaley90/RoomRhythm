@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import TrademarkDisclaimer from "@/components/TrademarkDisclaimer";
 
 // ── Types ──────────────────────────────────────────────────────
 type Profile = "selector" | "classroom" | "corporate" | "testing";
@@ -1238,7 +1239,7 @@ type TestPhase = "setup" | "ready" | "running" | "between" | "done";
 
 const TEST_TEMPLATES: { name: string; sections: Omit<TestSection, "id">[] }[] = [
   {
-    name: "SAT (School Day)",
+    name: "RoomRhythm's Mock Practice Timing for the SAT® Exam",
     sections: [
       { name: "Reading & Writing — Module 1", minutes: 32, isBreak: false },
       { name: "Reading & Writing — Module 2", minutes: 32, isBreak: false },
@@ -1248,7 +1249,7 @@ const TEST_TEMPLATES: { name: string; sections: Omit<TestSection, "id">[] }[] = 
     ],
   },
   {
-    name: "AP Exam (2-section)",
+    name: "RoomRhythm's Mock Practice Timing for the AP® Exam",
     sections: [
       { name: "Section I — Multiple Choice", minutes: 60, isBreak: false },
       { name: "Break", minutes: 10, isBreak: true },
@@ -1562,6 +1563,11 @@ function TestingApp({ onBack }: { onBack: () => void }) {
           </button>
         </div>
       )}
+
+      {/* Trademark attribution — renders wherever template marks (SAT®/AP®/ACT®) appear */}
+      <div className="absolute bottom-3 inset-x-0 z-10">
+        <TrademarkDisclaimer />
+      </div>
     </div>
   );
 }
