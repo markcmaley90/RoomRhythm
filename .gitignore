@@ -8,6 +8,9 @@
 /out/
 next-env.d.ts
 
+# typescript build cache (covers tsconfig.tsbuildinfo)
+*.tsbuildinfo
+
 # production
 /build
 
