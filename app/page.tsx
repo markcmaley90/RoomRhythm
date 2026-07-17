@@ -589,7 +589,7 @@ const PROFILE_CARDS: ProfileCard[] = [
   {
     id: "testing", emoji: "📝", title: "Testing",
     audience: "Proctors & administrators",
-    benefit: "Section timing, mandated warnings, extended time.",
+    benefit: "Mock exams, finals, and timed sections with extended-time accommodations.",
     topBorder: "border-t-amber-500",
     iconBg: "bg-amber-500/15",
     hoverBorder: "hover:border-amber-500/60",
@@ -609,8 +609,10 @@ function ProfileSelector({ onSelect }: { onSelect: (p: "classroom" | "corporate"
         <h1 className="text-6xl font-bold tracking-tight mb-4 pb-2 bg-gradient-to-r from-indigo-400 via-violet-400 to-teal-400 bg-clip-text text-transparent">
           RoomRhythm
         </h1>
-        <p className="text-2xl sm:text-3xl font-semibold text-white mb-2">Less noise. More learning.</p>
-        <p className="text-gray-500 text-sm">Pomodoro-style focus blocks for classrooms and teams.</p>
+        <p className="text-2xl sm:text-3xl font-semibold text-white mb-2">The screen that runs your room.</p>
+        <p className="max-w-2xl mx-auto text-gray-400 text-base">
+          Focus blocks, breaks, transitions, and sound for your classroom — plus the only classroom screen that can also run test day.
+        </p>
       </div>
       <div className="flex flex-col sm:flex-row gap-6 w-full max-w-4xl">
         {PROFILE_CARDS.map((p) => (
@@ -628,6 +630,19 @@ function ProfileSelector({ onSelect }: { onSelect: (p: "classroom" | "corporate"
           </button>
         ))}
       </div>
+
+      {/* Below-the-fold prose — supports the SEO target queries in docs/gtm-strategy.md §5.1 */}
+      <div className="w-full max-w-3xl border-t border-white/10 pt-8 text-center">
+        <p className="text-gray-500 text-sm leading-relaxed">
+          RoomRhythm works as a classroom timer for projector displays — Pomodoro-style focus
+          blocks, breaks, and transitions in numerals the back row can actually read. The same
+          screen runs your assessments, whether you need a final exam timer for a Friday midterm
+          or a full mock section with multiple accommodation lanes. As an exam timer with extended time,
+          it keeps standard and 1.5× students on one display. Every warning shows on screen and plays
+          out loud — at the times you set, for every timing group.
+        </p>
+      </div>
+
       <button onClick={() => setShowFeedback(true)}
         className="fixed bottom-6 right-6 z-40 px-4 py-2 rounded-full text-sm font-medium bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-all shadow-lg backdrop-blur">
         💡 Suggest a Feature
