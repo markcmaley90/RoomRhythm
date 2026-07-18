@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import TrademarkDisclaimer from "@/components/TrademarkDisclaimer";
 
 // ── Types ──────────────────────────────────────────────────────
@@ -600,6 +601,7 @@ const PROFILE_CARDS: ProfileCard[] = [
 
 function ProfileSelector({ onSelect }: { onSelect: (p: "classroom" | "corporate" | "testing") => void }) {
   const [showFeedback, setShowFeedback] = useState(false);
+  const router = useRouter();
   return (
     <div
       className="relative min-h-screen bg-gray-950 flex flex-col items-center justify-center gap-10 p-8 pb-40"
@@ -616,7 +618,7 @@ function ProfileSelector({ onSelect }: { onSelect: (p: "classroom" | "corporate"
       </div>
       <div className="flex flex-col sm:flex-row gap-6 w-full max-w-4xl">
         {PROFILE_CARDS.map((p) => (
-          <button key={p.id} onClick={() => onSelect(p.id)}
+          <button key={p.id} onClick={() => (p.id === "testing" ? router.push("/testing") : onSelect(p.id))}
             className={`group relative flex-1 flex flex-col items-center gap-4 p-8 rounded-3xl bg-slate-900/80 border border-white/10 border-t-2 ${p.topBorder} text-white text-center shadow-xl transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl ${p.hoverShadow} ${p.hoverBorder}`}>
             <div className={`flex items-center justify-center w-16 h-16 rounded-full ${p.iconBg} transition-transform duration-300 group-hover:scale-110`}>
               <span className="text-4xl leading-none">{p.emoji}</span>
