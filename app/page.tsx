@@ -602,11 +602,11 @@ function ProfileSelector({ onSelect }: { onSelect: (p: "classroom" | "corporate"
   const [showFeedback, setShowFeedback] = useState(false);
   return (
     <div
-      className="relative min-h-screen bg-gray-950 flex flex-col items-center justify-center gap-10 p-8"
+      className="relative min-h-screen bg-gray-950 flex flex-col items-center justify-center gap-10 p-8 pb-40"
       style={{ backgroundImage: "radial-gradient(ellipse 75% 55% at 50% 28%, rgba(99,102,241,0.13), transparent 70%)" }}
     >
       <div className="text-center">
-        <h1 className="text-6xl font-bold tracking-tight mb-4 pb-2 bg-gradient-to-r from-indigo-400 via-violet-400 to-teal-400 bg-clip-text text-transparent">
+        <h1 className="text-6xl font-bold tracking-tight mb-4 pb-2 bg-gradient-to-r from-indigo-400 to-teal-400 bg-clip-text text-transparent">
           RoomRhythm
         </h1>
         <p className="text-2xl sm:text-3xl font-semibold text-white mb-2">The screen that runs your room.</p>
@@ -851,7 +851,7 @@ function ClassroomApp({ onBack }: { onBack: () => void }) {
   if (projector) return <ProjectorView secondsLeft={secondsLeft} label={config.label} emoji={config.emoji} nearEnd={nearEnd} totalDuration={totalDurationRef.current} accent="#818cf8" onExit={() => setProjector(false)} />;
 
   return (
-    <div className={`min-h-screen ${config.bg} ${config.text} flex flex-col items-center justify-center transition-colors duration-700 p-6 relative ${emergencyActive ? "ring-8 ring-inset ring-red-500/60" : ""}`}
+    <div className={`min-h-screen ${config.bg} ${config.text} flex flex-col items-center justify-center transition-colors duration-700 p-6 pb-28 relative ${emergencyActive ? "ring-8 ring-inset ring-red-500/60" : ""}`}
       style={{ backgroundImage: "radial-gradient(ellipse 70% 55% at 50% 34%, rgba(129,140,248,0.14), transparent 72%)" }}>
 
       {/* Calm countdown: amber → indigo */}
@@ -880,7 +880,7 @@ function ClassroomApp({ onBack }: { onBack: () => void }) {
       {running && <KeyboardHint />}
 
       {/* Mode Label */}
-      <h1 className={`text-4xl font-bold tracking-tight mb-1 pb-1 ${mode === "idle" ? "bg-gradient-to-r from-indigo-400 via-violet-400 to-teal-400 bg-clip-text text-transparent" : ""}`}>
+      <h1 className={`text-4xl font-bold tracking-tight mb-1 pb-1 ${mode === "idle" ? "bg-gradient-to-r from-indigo-400 to-teal-400 bg-clip-text text-transparent" : ""}`}>
         {config.emoji} {config.label}
       </h1>
       <p className="text-base opacity-60 mb-8">{config.sub}</p>
@@ -965,9 +965,9 @@ function ClassroomApp({ onBack }: { onBack: () => void }) {
 
       {/* Main Buttons — Focus is the primary action */}
       <div className="flex gap-3 mb-5 flex-wrap justify-center">
-        <button onClick={handleCalmClick} className="px-6 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-white text-base font-semibold transition-all shadow-lg shadow-amber-500/25 hover:-translate-y-0.5">🔔 Calm</button>
-        <button onClick={() => activateMode("focus")} className="px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-base font-semibold transition-all shadow-lg shadow-indigo-500/25 hover:-translate-y-0.5">⏱ Focus</button>
-        <button onClick={() => activateMode("break")} className="px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-base font-semibold transition-all shadow-lg shadow-emerald-500/25 hover:-translate-y-0.5">🌿 Break</button>
+        <button onClick={handleCalmClick} className="px-6 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white text-base font-semibold transition-all shadow-lg shadow-sky-500/25 hover:-translate-y-0.5">🔔 Calm</button>
+        <button onClick={() => activateMode("focus")} className="px-8 py-3.5 rounded-2xl bg-teal-600 hover:bg-teal-500 text-white text-base font-semibold transition-all shadow-lg shadow-teal-500/25 hover:-translate-y-0.5">⏱ Focus</button>
+        <button onClick={() => activateMode("break")} className="px-6 py-3.5 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white text-base font-semibold transition-all shadow-lg shadow-amber-500/25 hover:-translate-y-0.5">🌿 Break</button>
       </div>
 
       {/* Pause / Reset — secondary */}
@@ -1119,7 +1119,7 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
   if (projector) return <ProjectorView secondsLeft={secondsLeft} label={config.label} emoji={config.emoji} nearEnd={nearEnd} totalDuration={totalDurationRef.current} accent="#2dd4bf" onExit={() => setProjector(false)} />;
 
   return (
-    <div className={`min-h-screen ${config.bg} ${config.text} flex flex-col items-center justify-center transition-colors duration-700 p-6 relative ${emergencyActive ? "ring-8 ring-inset ring-red-500/60" : ""}`}
+    <div className={`min-h-screen ${config.bg} ${config.text} flex flex-col items-center justify-center transition-colors duration-700 p-6 pb-28 relative ${emergencyActive ? "ring-8 ring-inset ring-red-500/60" : ""}`}
       style={{ backgroundImage: "radial-gradient(ellipse 68% 52% at 50% 34%, rgba(45,212,191,0.12), transparent 72%)" }}>
 
       {/* Calm countdown: amber → indigo */}
@@ -1147,7 +1147,7 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
 
       {running && <KeyboardHint />}
 
-      <h1 className={`text-4xl font-bold tracking-tight mb-1 pb-1 ${mode === "idle" ? "bg-gradient-to-r from-indigo-400 via-violet-400 to-teal-400 bg-clip-text text-transparent" : ""}`}>
+      <h1 className={`text-4xl font-bold tracking-tight mb-1 pb-1 ${mode === "idle" ? "bg-gradient-to-r from-indigo-400 to-teal-400 bg-clip-text text-transparent" : ""}`}>
         {config.emoji} {config.label}
       </h1>
       <p className="text-base opacity-60 mb-6">{config.sub}</p>
@@ -1231,9 +1231,9 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
 
       {/* Main Buttons — Focus is the primary action */}
       <div className="flex gap-3 mb-5 flex-wrap justify-center">
-        <button onClick={handleCalmClick} className="px-6 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-white text-base font-semibold transition-all shadow-lg shadow-amber-500/25 hover:-translate-y-0.5">🌿 Calm</button>
+        <button onClick={handleCalmClick} className="px-6 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white text-base font-semibold transition-all shadow-lg shadow-sky-500/25 hover:-translate-y-0.5">🔔 Calm</button>
         <button onClick={() => activateCorporateMode("work")} className="px-8 py-3.5 rounded-2xl bg-teal-600 hover:bg-teal-500 text-white text-base font-semibold transition-all shadow-lg shadow-teal-500/25 hover:-translate-y-0.5">💼 Focus</button>
-        <button onClick={() => activateCorporateMode("recharge")} className="px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-base font-semibold transition-all shadow-lg shadow-emerald-500/25 hover:-translate-y-0.5">⚡ Recharge</button>
+        <button onClick={() => activateCorporateMode("recharge")} className="px-6 py-3.5 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white text-base font-semibold transition-all shadow-lg shadow-amber-500/25 hover:-translate-y-0.5">⚡ Recharge</button>
       </div>
 
       {mode !== "idle" && !showCalmCD && (
