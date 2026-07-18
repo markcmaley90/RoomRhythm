@@ -220,8 +220,14 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
   };
 
   const single = activeLaneIds.length === 1;
+  // "Skip break" only while it's running — once a break has held at zero there is
+  // nothing left to skip, so fall through to the normal next/finish label.
   const advanceLabel =
-    seg?.kind === "break" ? "Skip break" : segIndex < segments.length - 1 ? "Next section →" : "Finish";
+    seg?.kind === "break" && phase !== "held"
+      ? "Skip break"
+      : segIndex < segments.length - 1
+        ? "Next section →"
+        : "Finish";
 
   return (
     <main
