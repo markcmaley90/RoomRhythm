@@ -33,6 +33,7 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
   const [muted, setMuted] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<
     | { kind: "advance" | "end"; segLabel: string; isBreak: boolean; lanes: { label: string; remaining: number }[] }
+    | { kind: "adjust"; deltaSecs: number; lanes: { label: string; remaining: number }[] }
     | null
   >(null);
 
@@ -152,18 +153,53 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
     log("resume", "Resumed");
   }
 
-  function addTime(secs: number) {
-    const labels = activeLaneIds.map((id) => laneById(id)?.label ?? id).join(", ");
+  // What each active lane's remaining WOULD be after a delta (clamped at 0).
+  function wouldBeAfter(deltaSecs: number): { id: string; label: string; remaining: number }[] {
+    const nowMs = Date.now();
+    return activeLaneIds.map((id) => {
+      let remaining: number;
+      if (paused && pausedRemaining) {
+        remaining = Math.max(0, Math.round(((pausedRemaining[id] ?? 0) + deltaSecs * 1000) / 1000));
+      } else {
+        const cur = deadlines[id] ?? nowMs;
+        remaining = remainingSeconds(Math.max(nowMs, cur + deltaSecs * 1000), nowMs);
+      }
+      return { id, label: laneById(id)?.label ?? id, remaining };
+    });
+  }
+
+  // Removing time is guarded when it would zero any active lane; adding is not.
+  function requestAdjust(deltaSecs: number) {
+    if (deltaSecs >= 0) {
+      applyAdjust(deltaSecs);
+      return;
+    }
+    const lanes = wouldBeAfter(deltaSecs);
+    if (lanes.some((l) => l.remaining <= 0)) {
+      setConfirmDialog({ kind: "adjust", deltaSecs, lanes: lanes.map(({ label, remaining }) => ({ label, remaining })) });
+    } else {
+      applyAdjust(deltaSecs);
+    }
+  }
+
+  function applyAdjust(deltaSecs: number) {
+    const nowMs = Date.now();
+    const after = wouldBeAfter(deltaSecs); // clamped remaining per active lane
     if (paused && pausedRemaining) {
       const pr = { ...pausedRemaining };
-      for (const id of activeLaneIds) pr[id] = (pr[id] ?? 0) + secs * 1000;
+      for (const a of after) pr[a.id] = a.remaining * 1000;
       setPausedRemaining(pr);
     } else {
       const dls = { ...deadlines };
-      for (const id of activeLaneIds) dls[id] = (dls[id] ?? Date.now()) + secs * 1000;
+      for (const a of after) dls[a.id] = nowMs + a.remaining * 1000;
       setDeadlines(dls);
     }
-    log("adjust", `Added ${Math.round(secs / 60)}m to all active lanes (${labels})`);
+    setNow(nowMs);
+    const sign = deltaSecs >= 0 ? "+" : "−";
+    const detail = after.map((a) => `${a.label} ${formatClock(a.remaining)}`).join(", ");
+    log("adjust", `${sign}${Math.abs(Math.round(deltaSecs / 60))}m — ${detail} remaining`);
+    // A lane zeroed by the adjustment is handled by the tick effect exactly like a
+    // natural zero: all-lanes-zero → gated hold; a single zeroed lane just shows 0:00.
   }
 
   function endTest() {
@@ -197,6 +233,12 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
     if (confirmDialog.kind === "end") {
       setConfirmDialog(null);
       endTest();
+      return;
+    }
+    if (confirmDialog.kind === "adjust") {
+      const d = confirmDialog.deltaSecs;
+      setConfirmDialog(null);
+      applyAdjust(d);
       return;
     }
     // Log remaining at the actual moment of the confirmed early advance.
@@ -390,13 +432,19 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
                 </button>
               )}
               <button
-                onClick={() => addTime(60)}
+                onClick={() => requestAdjust(-60)}
+                className="rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium transition-all hover:bg-white/20"
+              >
+                −1m
+              </button>
+              <button
+                onClick={() => requestAdjust(60)}
                 className="rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium transition-all hover:bg-white/20"
               >
                 +1m
               </button>
               <button
-                onClick={() => addTime(300)}
+                onClick={() => requestAdjust(300)}
                 className="rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium transition-all hover:bg-white/20"
               >
                 +5m
@@ -460,6 +508,25 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
                 <h2 className="text-lg font-bold">End the administration?</h2>
                 <p className="text-sm text-white/60">This ends the session for all lanes and stops the clocks.</p>
               </>
+            ) : confirmDialog.kind === "adjust" ? (
+              <>
+                <h2 className="text-lg font-bold">
+                  Remove {Math.abs(Math.round(confirmDialog.deltaSecs / 60))} minute
+                  {Math.abs(Math.round(confirmDialog.deltaSecs / 60)) !== 1 ? "s" : ""}?
+                </h2>
+                <p className="text-sm text-white/60">This would take a lane to zero — times after removal:</p>
+                <ul className="flex flex-col gap-1 text-sm">
+                  {confirmDialog.lanes.map((l) => (
+                    <li key={l.label} className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
+                      <span className="text-white/70">{l.label}</span>
+                      <span className={`font-mono tabular-nums ${l.remaining <= 0 ? "text-red-400" : "text-amber-300"}`}>
+                        {formatClock(l.remaining)}
+                        {l.remaining <= 0 ? " (at limit)" : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
             ) : (
               <>
                 <h2 className="text-lg font-bold">
@@ -485,7 +552,7 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
                 onClick={() => setConfirmDialog(null)}
                 className="rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium transition-all hover:bg-white/20"
               >
-                Keep running
+                {confirmDialog.kind === "adjust" ? "Cancel" : "Keep running"}
               </button>
               <button
                 onClick={confirmProceed}
@@ -493,9 +560,11 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
               >
                 {confirmDialog.kind === "end"
                   ? "End administration"
-                  : confirmDialog.isBreak
-                    ? "End break early"
-                    : "End early for all lanes"}
+                  : confirmDialog.kind === "adjust"
+                    ? "Remove time"
+                    : confirmDialog.isBreak
+                      ? "End break early"
+                      : "End early for all lanes"}
               </button>
             </div>
           </div>

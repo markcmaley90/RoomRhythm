@@ -17,9 +17,9 @@ const warn = (m: number, label: string, spoken = false) => ({
 /** ---------------- 1. School-created exam (no IP entanglement) ---------------- */
 export const finalExam90: TestTemplate = {
   id: 'seed-final-90',
-  name: '90-Minute Final Exam',
+  name: 'Classroom Final Exam',
   domain: 'school_exam',
-  description: 'A single-section classroom final with standard warning callouts.',
+  description: 'A single-section classroom final with standard warning callouts. Configured for 90 minutes.',
   verificationNotice: VERIFY,
   accommodationLanes: [STANDARD, EXT_15, EXT_20],
   segments: [
@@ -124,7 +124,7 @@ export const mockEnhancedAct: TestTemplate = {
 /** ---------------- 4. Corporate / warehouse certification ---------------- */
 export const safetyCertification: TestTemplate = {
   id: 'seed-safety-cert',
-  name: 'Safety Certification Session',
+  name: 'Training & Certification Session',
   domain: 'corporate_training',
   description:
     'Training modules plus a timed certification assessment. Suits warehouse, compliance, and equipment certification.',
@@ -146,9 +146,10 @@ export const safetyCertification: TestTemplate = {
   meta: { source: 'seed', version: 1, lastVerified: '2026-07-08' },
 };
 
+// General-purpose templates first row, branded mocks second.
 export const SEED_TEMPLATES: TestTemplate[] = [
   finalExam90,
+  safetyCertification,
   mockDigitalSat,
   mockEnhancedAct,
-  safetyCertification,
 ];
