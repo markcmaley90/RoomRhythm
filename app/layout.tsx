@@ -12,10 +12,26 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// TODO(launch): Add public/og-image.png (1200×630) before launch. The openGraph
+// and twitter cards below reference /og-image.png and will 404 until it exists.
 export const metadata: Metadata = {
-  title: "RoomRhythm — Less noise. More learning.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001"),
+  title: {
+    default: "RoomRhythm — The Screen That Runs Your Room",
+    template: "%s | RoomRhythm",
+  },
   description:
-    "Pomodoro-style focus blocks, calm-down cues, and brain breaks for classrooms, teams, and test proctoring.",
+    "Free classroom screen for focus blocks, breaks, and timed exams. The only classroom timer that can also run test day — with extended-time accommodations built in.",
+  openGraph: {
+    title: "RoomRhythm — The Screen That Runs Your Room",
+    description:
+      "Free classroom screen for focus blocks, breaks, and timed exams. The only classroom timer that can also run test day — with extended-time accommodations built in.",
+    type: "website",
+    images: ["/og-image.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({
