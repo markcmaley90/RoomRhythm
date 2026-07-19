@@ -130,5 +130,9 @@ export function useAudioEngine(muted: boolean, soundType: SoundType) {
     return () => { stopped = true; clearTimeout(timeoutId); };
   }, [getCtx, playTone]);
 
-  return { playEnd, playOneMinuteWarning, playAttention, playTick, playBegin, playFinalBeep, preview, startEmergencyAlarm };
+  // Create/resume the AudioContext. Call from a user gesture (Start/Begin) so
+  // later timer-driven sounds are audible under the browser autoplay policy.
+  const unlock = useCallback(() => { getCtx(); }, [getCtx]);
+
+  return { unlock, playEnd, playOneMinuteWarning, playAttention, playTick, playBegin, playFinalBeep, preview, startEmergencyAlarm };
 }

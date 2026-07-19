@@ -102,6 +102,7 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
   }
 
   function startSession() {
+    audio.unlock(); // prime the AudioContext on this gesture so later timer-driven sounds are audible
     setSegIndex(0);
     firedRef.current = new Set();
     setEvents([]);
@@ -111,6 +112,7 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
   }
 
   function beginSegment(idx: number) {
+    if (!muted) audio.playBegin(); // audible section-start cue (also unlocks the context on this gesture)
     const s = segments[idx];
     const t0 = Date.now();
     const dls: Record<string, number> = {};
