@@ -1,9 +1,7 @@
 "use client";
 
-// TODO(dedupe): This is a faithful copy of `useAudioEngine` from app/page.tsx,
-// created runner-only for the Testing routes. When the legacy inline TestingApp
-// is deleted, migrate Classroom/Corporate onto THIS module and remove the copy
-// in app/page.tsx so there is a single source of truth for the sound engine.
+// Shared Web Audio sound engine for RoomRhythm — the single source of truth used
+// by Classroom, Corporate, and the Testing section runner.
 
 import { useRef, useCallback } from "react";
 
