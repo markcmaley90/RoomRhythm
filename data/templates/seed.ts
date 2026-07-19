@@ -146,10 +146,35 @@ export const safetyCertification: TestTemplate = {
   meta: { source: 'seed', version: 1, lastVerified: '2026-07-08' },
 };
 
+/** ---------------- 5. Mock AP (practice only) ---------------- */
+export const mockApExam: TestTemplate = {
+  id: 'seed-mock-ap',
+  name: "RoomRhythm's Mock Practice Timing for the AP® Exam",
+  domain: 'practice_admissions',
+  description:
+    'Representative two-section structure — multiple choice, then free response. Timings vary by AP® subject; adjust against your coordinator materials. Built for paper practice runs and mock administrations.',
+  verificationNotice: VERIFY,
+  trademark: {
+    mark: 'AP®',
+    disclaimer:
+      'AP® is a registered trademark of the College Board, which was not involved in the production of, and does not endorse, this product.',
+  },
+  accommodationLanes: [STANDARD, EXT_15],
+  segments: [
+    { id: 'mc', kind: 'section', label: 'Section I: Multiple Choice', durationSeconds: 90 * 60, advance: 'gated',
+      warnings: [warn(30, '30 minutes remaining'), warn(10, '10 minutes remaining'), warn(5, '5 minutes remaining')] },
+    { id: 'brk', kind: 'break', label: 'Break', durationSeconds: 10 * 60, advance: 'gated' },
+    { id: 'frq', kind: 'section', label: 'Section II: Free Response', durationSeconds: 90 * 60, advance: 'gated',
+      warnings: [warn(30, '30 minutes remaining'), warn(10, '10 minutes remaining'), warn(5, '5 minutes remaining')] },
+  ],
+  meta: { source: 'seed', version: 1, lastVerified: '2026-07-18' },
+};
+
 // General-purpose templates first row, branded mocks second.
 export const SEED_TEMPLATES: TestTemplate[] = [
   finalExam90,
   safetyCertification,
   mockDigitalSat,
   mockEnhancedAct,
+  mockApExam,
 ];
