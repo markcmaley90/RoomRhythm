@@ -86,6 +86,9 @@ export interface TestTemplate {
   domain: TemplateDomain;
   description?: string;
 
+  /** Access tier for gating. Absent = treated as locked/Pro (fail closed). */
+  tier?: 'free' | 'pro';
+
   segments: Segment[];
   accommodationLanes: AccommodationLane[];
 
@@ -132,6 +135,11 @@ export function totalDurationFor(t: TestTemplate, lane: AccommodationLane): numb
  */
 export function warningsFor(seg: Segment): TimeWarning[] {
   return seg.warnings ?? [];
+}
+
+/** Playable in the free tier ONLY when explicitly marked 'free' (fail closed). */
+export function isFree(t: TestTemplate): boolean {
+  return t.tier === 'free';
 }
 
 /** Validation — run before any template is saved or shared. */

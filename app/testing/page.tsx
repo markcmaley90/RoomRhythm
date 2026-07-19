@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SEED_TEMPLATES } from "@/data/templates/seed";
-import { totalDurationFor, type TestTemplate, type AccommodationLane } from "@/lib/testing/schema";
+import { totalDurationFor, isFree, type TestTemplate, type AccommodationLane } from "@/lib/testing/schema";
 import { formatDuration } from "@/lib/testing/format";
 import TrademarkDisclaimer from "@/components/TrademarkDisclaimer";
 
@@ -46,14 +46,19 @@ export default function TestingPickerPage() {
           {SEED_TEMPLATES.map((t) => {
             const sectionCount = t.segments.filter((s) => s.kind === "section").length;
             const total = totalDurationFor(t, standardLane(t));
-            return (
-              <Link
-                key={t.id}
-                href={`/testing/run/${t.id}`}
-                className="group flex flex-col gap-3 rounded-2xl bg-slate-900/80 border border-white/10 border-t-2 border-t-amber-500 p-5 shadow-xl transition-all hover:-translate-y-1 hover:border-amber-500/60 hover:shadow-2xl hover:shadow-amber-500/20"
-              >
+            const free = isFree(t);
+
+            const body = (
+              <>
                 <div className="flex flex-col gap-1">
-                  <h2 className="text-lg font-semibold leading-snug">{t.name}</h2>
+                  <div className="flex items-start justify-between gap-2">
+                    <h2 className="text-lg font-semibold leading-snug">{t.name}</h2>
+                    {!free && (
+                      <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300">
+                        🔒 Pro
+                      </span>
+                    )}
+                  </div>
                   {t.description && (
                     <p className="text-sm text-white/50 leading-relaxed">{t.description}</p>
                   )}
@@ -63,11 +68,35 @@ export default function TestingPickerPage() {
                     {sectionCount} section{sectionCount !== 1 ? "s" : ""}
                   </span>
                   <span className="px-2 py-1 rounded-full bg-white/10 tabular-nums">{formatDuration(total)}</span>
-                  <span className="ml-auto font-semibold text-amber-400 transition-colors group-hover:text-amber-300">
-                    Open →
-                  </span>
+                  {free ? (
+                    <span className="ml-auto font-semibold text-amber-400 transition-colors group-hover:text-amber-300">
+                      Open →
+                    </span>
+                  ) : (
+                    <span className="ml-auto font-semibold text-white/40">Pro — coming soon</span>
+                  )}
                 </div>
+              </>
+            );
+
+            const base = "flex flex-col gap-3 rounded-2xl border border-white/10 border-t-2 p-5 shadow-xl transition-all";
+
+            return free ? (
+              <Link
+                key={t.id}
+                href={`/testing/run/${t.id}`}
+                className={`group ${base} bg-slate-900/80 border-t-amber-500 hover:-translate-y-1 hover:border-amber-500/60 hover:shadow-2xl hover:shadow-amber-500/20`}
+              >
+                {body}
               </Link>
+            ) : (
+              <div
+                key={t.id}
+                aria-disabled="true"
+                className={`${base} bg-slate-900/50 border-t-white/15 opacity-80`}
+              >
+                {body}
+              </div>
             );
           })}
         </div>

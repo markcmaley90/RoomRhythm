@@ -17,6 +17,7 @@ const warn = (m: number, label: string, spoken = false) => ({
 /** ---------------- 1. School-created exam (no IP entanglement) ---------------- */
 export const finalExam90: TestTemplate = {
   id: 'seed-final-90',
+  tier: 'free',
   name: 'Classroom Final Exam',
   domain: 'school_exam',
   description: 'A single-section classroom final with standard warning callouts. Configured for 90 minutes.',
@@ -60,6 +61,7 @@ export const finalExam90: TestTemplate = {
 /** ---------------- 2. Mock SAT (practice only) ---------------- */
 export const mockDigitalSat: TestTemplate = {
   id: 'seed-mock-sat',
+  tier: 'pro',
   name: "RoomRhythm's Mock Practice Timing for the SAT® Exam",
   domain: 'practice_admissions',
   description:
@@ -92,6 +94,7 @@ export const mockDigitalSat: TestTemplate = {
 /** ---------------- 3. Mock ACT (enhanced format, practice only) ---------------- */
 export const mockEnhancedAct: TestTemplate = {
   id: 'seed-mock-act',
+  tier: 'pro',
   name: "RoomRhythm's Mock Practice Timing for the ACT® Test",
   domain: 'practice_admissions',
   description: 'Enhanced ACT format. Science and Writing are optional add-on sections.',
@@ -124,6 +127,7 @@ export const mockEnhancedAct: TestTemplate = {
 /** ---------------- 4. Corporate / warehouse certification ---------------- */
 export const safetyCertification: TestTemplate = {
   id: 'seed-safety-cert',
+  tier: 'pro',
   name: 'Training & Certification Session',
   domain: 'corporate_training',
   description:
@@ -149,6 +153,7 @@ export const safetyCertification: TestTemplate = {
 /** ---------------- 5. Mock AP (practice only) ---------------- */
 export const mockApExam: TestTemplate = {
   id: 'seed-mock-ap',
+  tier: 'pro',
   name: "RoomRhythm's Mock Practice Timing for the AP® Exam",
   domain: 'practice_admissions',
   description:
