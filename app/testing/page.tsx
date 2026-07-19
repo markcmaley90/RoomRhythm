@@ -81,21 +81,30 @@ export default function TestingPickerPage() {
 
             const base = "flex flex-col gap-3 rounded-2xl border border-white/10 border-t-2 p-5 shadow-xl transition-all";
 
-            return free ? (
-              <Link
-                key={t.id}
-                href={`/testing/run/${t.id}`}
-                className={`group ${base} bg-slate-900/80 border-t-amber-500 hover:-translate-y-1 hover:border-amber-500/60 hover:shadow-2xl hover:shadow-amber-500/20`}
-              >
-                {body}
-              </Link>
-            ) : (
-              <div
-                key={t.id}
-                aria-disabled="true"
-                className={`${base} bg-slate-900/50 border-t-white/15 opacity-80`}
-              >
-                {body}
+            return (
+              <div key={t.id} className="flex flex-col gap-2">
+                {free ? (
+                  <Link
+                    href={`/testing/run/${t.id}`}
+                    className={`group ${base} bg-slate-900/80 border-t-amber-500 hover:-translate-y-1 hover:border-amber-500/60 hover:shadow-2xl hover:shadow-amber-500/20`}
+                  >
+                    {body}
+                  </Link>
+                ) : (
+                  <div
+                    aria-disabled="true"
+                    className={`${base} bg-slate-900/50 border-t-white/15 opacity-80`}
+                  >
+                    {body}
+                  </div>
+                )}
+                {/* Landing page — the only place a locked card can lead. */}
+                <Link
+                  href={`/templates/${t.id}`}
+                  className="self-start px-1 text-xs font-medium text-white/45 transition-colors hover:text-amber-300"
+                >
+                  About this template →
+                </Link>
               </div>
             );
           })}
