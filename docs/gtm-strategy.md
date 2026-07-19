@@ -50,6 +50,8 @@ If capital is ever needed: angels or revenue-based financing before VC.
 - Gated advance by default — nothing auto-advances silently during a live exam.
 - PII-free administration log (initials + seat numbers only).
 
+**Pricing position (see §4):** Testing lives in the *paid* band, fronted by one free demo template (Classroom Final Exam / seed-final-90) so the wedge stays demo-able and the landing pages honest. It differentiates and anchors SEO, but does **not** itself drive individual subscriptions — the daily-use band (ambient sound library, multi-device sync) does.
+
 **Market reality constraint (critical for messaging):**
 
 The official SAT and most AP exams are now digital in Bluebook, which times itself — College Board explicitly instructs proctors *not* to time the test. Therefore the Testing profile's real market is:
@@ -79,7 +81,7 @@ The official SAT and most AP exams are now digital in Bluebook, which times itse
 | Segment | Role | Motion |
 |---|---|---|
 | Teachers (MS/HS core, elementary secondary) | Daily users, viral surface | Free, self-serve, no login |
-| Tutoring & test-prep centers | Highest-intent Testing buyer | Self-serve → Pro |
+| Tutoring & test-prep centers | Highest-intent Testing buyer | Self-serve → Business tier |
 | School testing coordinators | Site-license buyer | Domain-signal founder email |
 | Corporate trainers | Secondary | Self-serve |
 
@@ -87,13 +89,28 @@ The official SAT and most AP exams are now digital in Bluebook, which times itse
 
 ## 4. Pricing
 
-**Launch posture: 100% free. No payments at launch.** The goal of the launch window is maximum reach and email/domain capture, not revenue. Building Stripe now is a distraction.
+**Model summary:** The functional tool is free on one screen. Revenue comes from an annual-only ladder gating scale and premium daily-use features — full Testing, the ambient sound library, and multi-device sync — patterned on Stagetimer's proven structure (~$100k ARR solo-founder comp: meter quantities and polish, never cripple the core verb; no monthly SKU).
 
-**Planned structure (activate when traction warrants):**
+### Tiers (annual-only; no monthly SKUs)
 
-- **Free forever:** full Classroom core — timer, sounds, breaks, projector mode. No login required to use; login only to save setups. Wordmark visible in projector mode.
-- **Pro (individual): $36/year** — matches the Classroomscreen anchor. Unlimited saved setups, hide projector wordmark, full Testing template library + accommodation lanes + log export. (Exact free/paid line is an open decision — finalize before payments ship.)
-- **Room/Admin tier: $10/month** — reserved for admin/room-level plan per prior decision.
+- **Free:** Classroom and Corporate complete on one device — timers, breaks, cue sounds (bells, chimes, warnings), projector mode. Testing: one full demo template (Classroom Final Exam / seed-final-90) with lanes, warnings, and log — the wedge stays demo-able. Other templates visible but locked. No ads, no signup required to run a room.
+- **Educator/Work Pro — $19.99/yr** (school or work email; launch verification is a domain check rejecting major consumer providers — real verification is enterprise machinery deferred until site licenses): full Testing (all templates; future session builder), ambient sound library (focus/calm/transition audio beds, ad-free), phone-remote sync when it ships (~5 connections).
+- **Pro — $59.99/yr:** identical features, no email requirement.
+- **Business — structure TBD, working range $149–199/yr:** for tutoring/test-prep centers and training companies. Stagetimer-patterned: custom branding on displays, high connection count, multi-room. Finalized October 2026 with usage data.
+- **Site license — $10/mo room/admin tier (reserved):** school/org level. **Credit-forward policy:** on activation, individual subscribers on the domain fold in automatically — personal billing stops; unused prepaid time is credited against the school's invoice or refunded pro-rata. Automatic policy, not a support queue. Sales framing: "your teachers are already paying out of pocket — the license ends that."
+
+### Rationale (decided July 2026; supersedes the save-to-Pro model)
+
+- **Charge inside the daily habit; gate scale, not function.** Teachers live in Classroom/Corporate 180 days/year — the sound library and sync are felt daily. The free tier is never crippled mid-task; paywalls sit on scale (devices, templates, atmosphere), per the Stagetimer pattern (their free tier works; their gates are connection counts — and audio chimes are a paid feature in their model too).
+- **Testing sits in the paid band as differentiator, not subscription driver.** Test-day tooling is too episodic to drive individual subscriptions on its own; it converts as part of the band, anchored by daily-use features. One free template keeps the wedge demo-able and the landing pages honest.
+- **Annual-only:** avoids processor fees eating sub-$2 monthly transactions, kills churn management, and the comp proves buyers accept it. Early subscribers grandfather at their price if rates rise.
+- **The educator tier is the flywheel with a price tag:** every $19.99 subscriber contributes a verified school/work domain — a warmer site-license lead than a free user, having demonstrated willingness to pay.
+- **Business tier is where comp-scale revenue lives:** Stagetimer earns $210+/yr from professional buyers expensing the tool; our equivalent is centers and training companies, not squeezing teachers. Their pricing structure ($210 floor) cedes education to us; our $19.99 educator tier is territory they can't follow us into without torching their model.
+- **Launch posture unchanged: 100% free, no payments infrastructure.** Pro appears as a visible "coming soon" tier (gating scaffold ships now). Payments, accounts, and the sound library ship post-launch; sync follows when the backend exists, promised on the pricing page from day one.
+
+### Open questions (revisit October 2026 with usage data)
+
+Business-tier final structure and price; whether ambient audio converts before sync ships; a single-event / finals-week pass (Stagetimer's 30-day-license pattern) if data shows episodic buyers; site-license final pricing; whether the $59.99 standard tier sees uptake or educator is effectively the product; PWA/offline as a paid reliability claim vs. free trust-builder.
 
 ---
 
