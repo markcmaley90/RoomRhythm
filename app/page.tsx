@@ -338,15 +338,33 @@ function SoundPicker({ soundType, onSoundChange, onPreview }: {
 // ══════════════════════════════════════════════════════════════
 // PROJECTOR VIEW
 // ══════════════════════════════════════════════════════════════
-function ProjectorView({ secondsLeft, label, emoji, nearEnd, totalDuration, onExit, accent = "#818cf8" }: {
+/** Host shown in the projector wordmark — the deployed origin when configured. */
+function wordmarkHost(): string {
+  const raw = process.env.NEXT_PUBLIC_SITE_URL;
+  if (!raw) return "roomrhythm.app";
+  try {
+    return new URL(raw).hostname;
+  } catch {
+    return "roomrhythm.app";
+  }
+}
+
+function ProjectorView({ secondsLeft, label, emoji, nearEnd, totalDuration, onExit, accent = "#818cf8", showWordmark = true }: {
   secondsLeft: number; label: string; emoji: string;
   nearEnd: boolean; totalDuration: number; onExit: () => void; accent?: string;
+  /** Reserved for a future Pro tier to hide the wordmark. No settings UI today. */
+  showWordmark?: boolean;
 }) {
   const r = 150, circ = 2 * Math.PI * r;
   const progress = totalDuration > 0 ? (totalDuration - secondsLeft) / totalDuration : 0;
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center z-50 bg-gray-950">
       <button onClick={onExit} className="absolute top-6 right-6 text-white/30 hover:text-white/70 text-sm">✕ Exit Projector</button>
+      {showWordmark && (
+        <span className="absolute bottom-6 right-6 text-sm opacity-40 pointer-events-none select-none">
+          RoomRhythm · {wordmarkHost()}
+        </span>
+      )}
       <p className="text-white/40 text-2xl font-medium mb-8 tracking-widest uppercase">{emoji} {label}</p>
       <div className="relative flex items-center justify-center">
         <svg width="360" height="360" className="absolute">

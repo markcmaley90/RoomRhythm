@@ -20,15 +20,16 @@
 | Testing MVP (section runner + admin log) | ✅ Done |
 | P0-1 Language & trademark audit | ✅ Done |
 | P0-2 Positioning & homepage copy | ✅ Done |
-| P0-3 SEO foundation | ✅ Done (og-image.png still TODO — `/public` doesn't exist yet) |
+| P0-3 SEO foundation | ✅ Done (og-image.png added in commit `007f979`) |
 | P0-4 Template landing pages | ✅ Done (commit `7e58673`) |
 | P0-5 Shareable session links | ✅ Done (commit `1d0bdd7`) |
-| P0-6 Projector wordmark | ⬜ Not started |
+| P0-6 Projector wordmark | ✅ Done |
 | P0-7 Random name picker | ⬜ Not started |
 | P0-8 Noise meter | ⬜ Not started (prompt updated Jul 19 to use the synthesized "soft" `SoundType` from `lib/audio.ts` — no audio files exist) |
 | P1-9 Plausible analytics | ⬜ Not started — **pulled forward: pre-launch** (need referrer data from launch day one; see gtm-launch-kit.md §8) |
 | P1-10 Email capture | ⬜ Not started — **pulled forward: pre-launch** (flywheel needs fuel from post one; see gtm-launch-kit.md §8) |
 | P1-11 Encode strategy into CLAUDE.md | ✅ Done (CLAUDE.md carries positioning + guardrails) |
+| P1-13 Testing runner projector view | ⬜ Not started (surfaced during P0-6; target: before Oct mock-exam push) |
 | P2-12 Sync spec | ⬜ Post-launch |
 
 **Quiet-launch target: Aug 2, 2026** (per gtm-launch-kit.md). Remaining build order: P0-5 → P0-6 → P0-7 → P0-8 → P1-9 → P1-10.
@@ -210,7 +211,7 @@ Show me a screenshot-style description of placement before writing code.
 ```
 
 **Acceptance:**
-- [ ] Visible but quiet in both Classroom and Testing projector views
+- [ ] Visible but quiet in both Classroom and Corporate projector views
 - [ ] No overlap at 1024×768 and 1920×1080
 - [ ] `showWordmark` flag exists, no UI for it
 - [ ] Non-interactive
@@ -360,6 +361,21 @@ Show me the CLAUDE.md diff before writing.
 **Acceptance:**
 - [ ] Messaging rules + guardrails now in CLAUDE.md
 - [ ] Append-only; existing framing untouched
+
+---
+
+## P1-13 · Testing runner projector view
+
+**Goal:** Build a fullscreen projector mode for `SectionRunner` on the `ProjectorView` pattern — multi-lane clocks, warning banner, section label, and the wordmark via the existing `showWordmark` flag.
+
+**Files:** `components/testing/SectionRunner.tsx` + a Testing-specific projector component.
+**Depends on:** Testing MVP section runner (done).
+
+**Notes:** Needs its own design pass — the existing `ProjectorView` renders a single clock, whereas the Testing runner must show standard and extended-time lanes side by side at projector scale. Surfaced during P0-6: the Testing runner has no projector view today (the old inline `TestingApp` had one; it was removed in `93fb47c` and the new runner never got one), which is why P0-6's wordmark covers Classroom and Corporate only.
+
+**Target:** before the October mock-exam season push (see `gtm-launch-kit.md`).
+
+*No prompt block yet — placeholder.*
 
 ---
 
