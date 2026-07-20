@@ -22,7 +22,7 @@
 | P0-2 Positioning & homepage copy | ✅ Done |
 | P0-3 SEO foundation | ✅ Done (og-image.png still TODO — `/public` doesn't exist yet) |
 | P0-4 Template landing pages | ✅ Done (commit `7e58673`) |
-| P0-5 Shareable session links | ✅ Done |
+| P0-5 Shareable session links | ✅ Done (commit `1d0bdd7`) |
 | P0-6 Projector wordmark | ⬜ Not started |
 | P0-7 Random name picker | ⬜ Not started |
 | P0-8 Noise meter | ⬜ Not started (prompt updated Jul 19 to use the synthesized "soft" `SoundType` from `lib/audio.ts` — no audio files exist) |
