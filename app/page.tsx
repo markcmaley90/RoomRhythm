@@ -10,6 +10,7 @@ import {
   type ClassroomShareConfig,
 } from "@/lib/share";
 import NamePicker from "@/components/NamePicker";
+import NoiseMeter from "@/components/NoiseMeter";
 
 // ── Types ──────────────────────────────────────────────────────
 type Profile = "selector" | "classroom" | "corporate";
@@ -638,6 +639,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
   const [emergencyActive, setEmergencyActive] = useState(false);
   const [copied, setCopied]                 = useState(false);
   const [showNames, setShowNames]           = useState(false);
+  const [showNoise, setShowNoise]           = useState(false);
 
   const intervalRef      = useRef<NodeJS.Timeout | null>(null);
   const totalDurationRef = useRef<number>(0);
@@ -795,6 +797,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
 
       <RoomTopBar emoji="🏫" name="Classroom" accentBg="bg-indigo-500/15" onBack={onBack}>
         <button onClick={() => setShowNames(true)} className={CTRL_BTN}>🎲 Names</button>
+        <button onClick={() => setShowNoise(true)} className={CTRL_BTN}>🔊 Noise</button>
         <button onClick={() => setShowFeedback(true)} className={CTRL_BTN}>💡 Suggest</button>
         <button onClick={toggleFullscreen} className={CTRL_BTN}>{isFullscreen ? "⊠ Exit Full" : "⛶ Fullscreen"}</button>
         <button onClick={() => setProjector(true)} className={CTRL_BTN}>📽 Projector</button>
@@ -806,6 +809,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
 
       {showFeedback && <FeedbackModal profile="classroom" onClose={() => setShowFeedback(false)} />}
       {showNames && <NamePicker onClose={() => setShowNames(false)} />}
+      {showNoise && <NoiseMeter muted={muted} onClose={() => setShowNoise(false)} />}
       <EmergencyButton onActivate={handleEmergencyActivate} onDeactivate={handleEmergencyDeactivate} />
 
       {running && <KeyboardHint />}

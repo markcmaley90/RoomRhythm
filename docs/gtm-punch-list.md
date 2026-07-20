@@ -25,14 +25,14 @@
 | P0-5 Shareable session links | ✅ Done (commit `1d0bdd7`) |
 | P0-6 Projector wordmark | ✅ Done (commit `c12808a`) |
 | P0-7 Random name picker | ✅ Done (commit `db39e1c`) |
-| P0-8 Noise meter | ⬜ Not started (prompt updated Jul 19 to use the synthesized "soft" `SoundType` from `lib/audio.ts` — no audio files exist) |
+| P0-8 Noise meter | ✅ Done (synthesized "soft" `SoundType` from `lib/audio.ts` — no audio files) |
 | P1-9 Plausible analytics | ⬜ Not started — **pulled forward: pre-launch** (need referrer data from launch day one; see gtm-launch-kit.md §8) |
 | P1-10 Email capture | ⬜ Not started — **pulled forward: pre-launch** (flywheel needs fuel from post one; see gtm-launch-kit.md §8) |
 | P1-11 Encode strategy into CLAUDE.md | ✅ Done (CLAUDE.md carries positioning + guardrails) |
 | P1-13 Testing runner projector view | ⬜ Not started (surfaced during P0-6; target: before Oct mock-exam push) |
 | P2-12 Sync spec | ⬜ Post-launch |
 
-**Quiet-launch target: Aug 2, 2026** (per gtm-launch-kit.md). Remaining build order: P0-5 → P0-6 → P0-7 → P0-8 → P1-9 → P1-10.
+**Quiet-launch target: Aug 2, 2026** (per gtm-launch-kit.md). Remaining build order: P0-8 → P1-9 → P1-10.
 
 ---
 
