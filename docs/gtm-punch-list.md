@@ -24,7 +24,7 @@
 | P0-4 Template landing pages | ✅ Done (commit `7e58673`) |
 | P0-5 Shareable session links | ✅ Done (commit `1d0bdd7`) |
 | P0-6 Projector wordmark | ✅ Done |
-| P0-7 Random name picker | ⬜ Not started |
+| P0-7 Random name picker | ✅ Done |
 | P0-8 Noise meter | ⬜ Not started (prompt updated Jul 19 to use the synthesized "soft" `SoundType` from `lib/audio.ts` — no audio files exist) |
 | P1-9 Plausible analytics | ⬜ Not started — **pulled forward: pre-launch** (need referrer data from launch day one; see gtm-launch-kit.md §8) |
 | P1-10 Email capture | ⬜ Not started — **pulled forward: pre-launch** (flywheel needs fuel from post one; see gtm-launch-kit.md §8) |

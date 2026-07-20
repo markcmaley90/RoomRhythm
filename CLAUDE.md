@@ -10,7 +10,7 @@ RoomRhythm is a browser-based focus-block timer and room clock for in-person roo
 - Every test template **requires** a `verificationNotice`. Templates referencing a trademark **require** a `trademark` disclaimer rendered wherever the name appears. See `docs/09_trademark_and_disclaimers.md`.
 - **NEVER** put a third-party mark (SAT, ACT, AP) in the product name, tagline, or domain. Never use their logos. Never reproduce official test content.
 - Secrets live in `.env.local` (gitignored) and are read ONLY in server files (`app/api/**`, `lib/**`). Never in a client component.
-- No `localStorage` / `sessionStorage`.
+- No `localStorage` / `sessionStorage` — ONE carve-out: the Classroom name-picker roster (key `roomrhythm.rosters.v1`) may use `localStorage`. Device-local only; never synced, transmitted, or included in share links, analytics, or any network request. See `docs/gtm-strategy.md` §9.3. Nothing else persists client-side; Testing/administration data never touches it.
 - Project stays outside OneDrive (Turbopack cache corruption). Active folder: `RoomRhythm`.
 
 ## Architecture
