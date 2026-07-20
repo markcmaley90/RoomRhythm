@@ -3,6 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAudioEngine, type SoundType } from "@/lib/audio";
+import {
+  SHARE_PARAM,
+  decodeShareConfig,
+  withShareParam,
+  type ClassroomShareConfig,
+} from "@/lib/share";
 
 // ── Types ──────────────────────────────────────────────────────
 type Profile = "selector" | "classroom" | "corporate";
@@ -582,23 +588,36 @@ function FeedbackModal({ profile, onClose }: { profile: string; onClose: () => v
 // ══════════════════════════════════════════════════════════════
 // CLASSROOM
 // ══════════════════════════════════════════════════════════════
-function ClassroomApp({ onBack }: { onBack: () => void }) {
+function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: ClassroomShareConfig | null }) {
+  // A shared link seeds the setup; every value is clamped to this app's own
+  // ranges so a hand-edited link can never produce an out-of-range setup.
+  const initBand = shared ? Math.min(Math.max(0, shared.band), GRADE_BANDS.length - 1) : 2;
+  const initMinutes = shared
+    ? Math.min(
+        Math.max(GRADE_BANDS[initBand].sliderMin, Math.round(shared.focusSeconds / 60)),
+        GRADE_BANDS[initBand].sliderMax,
+      )
+    : GRADE_BANDS[initBand].defaultMin;
+
   const [showFeedback, setShowFeedback]     = useState(false);
   const [mode, setMode]                     = useState<ClassroomMode>("idle");
-  const [bandIndex, setBandIndex]           = useState(2);
-  const [customMinutes, setCustomMinutes]   = useState(GRADE_BANDS[2].defaultMin);
+  const [bandIndex, setBandIndex]           = useState(initBand);
+  const [customMinutes, setCustomMinutes]   = useState(initMinutes);
   const [secondsLeft, setSecondsLeft]       = useState(0);
   const [running, setRunning]               = useState(false);
   const [muted, setMuted]                   = useState(false);
-  const [soundType, setSoundType]           = useState<SoundType>("chime");
+  const [soundType, setSoundType]           = useState<SoundType>(shared?.sound ?? "chime");
   const [currentBreak, setCurrentBreak]     = useState(BRAIN_BREAKS[0]);
   const [flashTrigger, setFlashTrigger]     = useState(0);
   const [projector, setProjector]           = useState(false);
   const [showCalmCD, setShowCalmCD]         = useState(false);
   const [showFocusCD, setShowFocusCD]       = useState(false);
-  const [calmDuration, setCalmDuration]     = useState(5);
-  const [autoBreak, setAutoBreak]           = useState(true);
+  const [calmDuration, setCalmDuration]     = useState(
+    shared && (shared.calmSeconds === 3 || shared.calmSeconds === 5) ? shared.calmSeconds : 5,
+  );
+  const [autoBreak, setAutoBreak]           = useState(shared ? shared.autoBreak : true);
   const [emergencyActive, setEmergencyActive] = useState(false);
+  const [copied, setCopied]                 = useState(false);
 
   const intervalRef      = useRef<NodeJS.Timeout | null>(null);
   const totalDurationRef = useRef<number>(0);
@@ -710,6 +729,24 @@ function ClassroomApp({ onBack }: { onBack: () => void }) {
   }
 
   function selectBand(i: number) { setBandIndex(i); setCustomMinutes(GRADE_BANDS[i].defaultMin); }
+
+  async function copyShareLink() {
+    const cfg: ClassroomShareConfig = {
+      p: "classroom",
+      band: bandIndex,
+      focusSeconds: customMinutes * 60,
+      calmSeconds: calmDuration,
+      autoBreak,
+      sound: soundType,
+    };
+    try {
+      await navigator.clipboard.writeText(withShareParam(window.location.href, cfg));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard blocked (insecure context / permission) — fail quietly.
+    }
+  }
 
   function handleEmergencyActivate() {
     setEmergencyActive(true);
@@ -830,6 +867,16 @@ function ClassroomApp({ onBack }: { onBack: () => void }) {
                 <span className="opacity-50">Sound</span>
                 <SoundPicker soundType={soundType} onSoundChange={setSoundType} onPreview={preview} />
               </div>
+            </div>
+            <div className="h-px bg-white/10" />
+            <div className="flex flex-col items-center gap-1.5">
+              <button onClick={copyShareLink}
+                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-xs font-medium transition-all">
+                {copied ? "✓ Copied!" : "🔗 Copy share link"}
+              </button>
+              <p className="text-[11px] text-center opacity-50">
+                Anyone with this link opens your exact setup — great for subs and co-teachers.
+              </p>
             </div>
           </div>
         </div>
@@ -1123,7 +1170,19 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
 // ══════════════════════════════════════════════════════════════
 export default function Home() {
   const [profile, setProfile] = useState<Profile>("selector");
+  const [shared, setShared] = useState<ClassroomShareConfig | null>(null);
+
+  // A valid ?s= link opens straight into the shared setup. Anything invalid or
+  // missing falls through silently to the normal profile picker — never an error.
+  useEffect(() => {
+    const cfg = decodeShareConfig(new URLSearchParams(window.location.search).get(SHARE_PARAM));
+    if (cfg?.p === "classroom") {
+      setShared(cfg);
+      setProfile("classroom");
+    }
+  }, []);
+
   return profile === "selector" ? <ProfileSelector onSelect={setProfile} />
-    : profile === "classroom" ? <ClassroomApp onBack={() => setProfile("selector")} />
+    : profile === "classroom" ? <ClassroomApp onBack={() => setProfile("selector")} shared={shared} />
     : <CorporateApp onBack={() => setProfile("selector")} />;
 }

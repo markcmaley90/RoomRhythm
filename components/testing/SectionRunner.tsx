@@ -8,6 +8,7 @@ import { remainingSeconds, warningKey, warningsToFire } from "@/lib/testing/runn
 import { formatClock } from "@/lib/testing/format";
 import { useAudioEngine } from "@/lib/audio";
 import AdminLog, { type AdminEvent } from "@/components/testing/AdminLog";
+import { SHARE_PARAM, decodeShareConfig, withShareParam } from "@/lib/share";
 import TrademarkDisclaimer from "@/components/TrademarkDisclaimer";
 
 type Phase = "setup" | "pre" | "active" | "held" | "done";
@@ -37,6 +38,8 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
     | null
   >(null);
 
+  const [copied, setCopied] = useState(false);
+
   const firedRef = useRef<Set<string>>(new Set());
   const eventIdRef = useRef(1);
 
@@ -47,6 +50,35 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
 
   function log(kind: AdminEvent["kind"], message: string) {
     setEvents((evs) => [...evs, { id: eventIdRef.current++, atLabel: stamp(), kind, message }]);
+  }
+
+  // A valid ?s= link restores the shared lane selection. Anything invalid or for
+  // another template falls through silently to the default — never an error.
+  useEffect(() => {
+    const cfg = decodeShareConfig(new URLSearchParams(window.location.search).get(SHARE_PARAM));
+    if (cfg?.p !== "testing" || cfg.templateId !== template.id) return;
+    const known = new Set(template.accommodationLanes.map((l) => l.id));
+    const lanes = cfg.lanes.filter((id) => known.has(id));
+    // The standard lane is always active — preserve that invariant.
+    const withStandard = lanes.includes(standard.id) ? lanes : [standard.id, ...lanes];
+    if (withStandard.length) setActiveLaneIds(withStandard);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function copyShareLink() {
+    try {
+      await navigator.clipboard.writeText(
+        withShareParam(window.location.href, {
+          p: "testing",
+          templateId: template.id,
+          lanes: activeLaneIds,
+        }),
+      );
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard blocked (insecure context / permission) — fail quietly.
+    }
   }
 
   // ── Tick: one interval drives re-render; the clock is derived, never accumulated ──
@@ -337,6 +369,18 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
             >
               Start administration →
             </button>
+
+            <div className="flex flex-col items-center gap-1.5">
+              <button
+                onClick={copyShareLink}
+                className="rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-xs font-medium transition-all hover:bg-white/20"
+              >
+                {copied ? "✓ Copied!" : "🔗 Copy share link"}
+              </button>
+              <p className="max-w-xs text-[11px] leading-relaxed text-white/45">
+                Anyone with this link opens your exact setup — great for subs and co-teachers.
+              </p>
+            </div>
           </div>
         )}
 

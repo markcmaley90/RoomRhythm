@@ -13,6 +13,26 @@
 
 **Priorities:** P0 = ship before launch · P1 = launch week · P2 = post-launch spec work
 
+## Status (verified against repo, July 19, 2026)
+
+| Item | Status |
+|---|---|
+| Testing MVP (section runner + admin log) | ✅ Done |
+| P0-1 Language & trademark audit | ✅ Done |
+| P0-2 Positioning & homepage copy | ✅ Done |
+| P0-3 SEO foundation | ✅ Done (og-image.png still TODO — `/public` doesn't exist yet) |
+| P0-4 Template landing pages | ✅ Done (commit `7e58673`) |
+| P0-5 Shareable session links | ✅ Done |
+| P0-6 Projector wordmark | ⬜ Not started |
+| P0-7 Random name picker | ⬜ Not started |
+| P0-8 Noise meter | ⬜ Not started (prompt updated Jul 19 to use the synthesized "soft" `SoundType` from `lib/audio.ts` — no audio files exist) |
+| P1-9 Plausible analytics | ⬜ Not started — **pulled forward: pre-launch** (need referrer data from launch day one; see gtm-launch-kit.md §8) |
+| P1-10 Email capture | ⬜ Not started — **pulled forward: pre-launch** (flywheel needs fuel from post one; see gtm-launch-kit.md §8) |
+| P1-11 Encode strategy into CLAUDE.md | ✅ Done (CLAUDE.md carries positioning + guardrails) |
+| P2-12 Sync spec | ⬜ Post-launch |
+
+**Quiet-launch target: Aug 2, 2026** (per gtm-launch-kit.md). Remaining build order: P0-5 → P0-6 → P0-7 → P0-8 → P1-9 → P1-10.
+
 ---
 
 ## P0-1 · Language & trademark audit
@@ -150,7 +170,7 @@ Add shareable session links to RoomRhythm. No backend — encode configuration i
 
 1. Create lib/share.ts with two pure functions: encodeShareConfig(config) → URL-safe string (JSON.stringify → encodeURIComponent → btoa, or an equivalent URL-safe base64 approach), and decodeShareConfig(param) → config object or null. decodeShareConfig must never throw: wrap parsing in try/catch, validate the decoded object against the expected shape before returning it, and return null on any failure. For Testing templates, reuse validation helpers from lib/testing/schema.ts rather than duplicating checks.
 
-2. Add a "Copy share link" button to the main Classroom timer setup and to the Testing template picker. Clicking copies the current URL with ?s=<encoded> to the clipboard using navigator.clipboard.writeText, with a brief "Copied!" confirmation state. Include a one-line hint under the button: "Anyone with this link opens your exact setup — great for subs and co-teachers."
+2. Add a "Copy share link" button to the main Classroom timer setup and to the Testing runner (lane-selection phase). Clicking copies the current URL with ?s=<encoded> to the clipboard using navigator.clipboard.writeText, with a brief "Copied!" confirmation state. Include a one-line hint under the button: "Anyone with this link opens your exact setup — great for subs and co-teachers."
 
 3. On load, both pages check for the ?s= param, decode it, and hydrate the setup if valid. Invalid or missing params fall through silently to defaults — never show an error for a bad link, just load defaults.
 
@@ -163,7 +183,7 @@ Show me lib/share.ts first for review, then the integrations.
 - [ ] Copy → open in incognito → identical setup loads
 - [ ] Corrupted `?s=` value loads defaults silently
 - [ ] No roster/log data ever enters the URL
-- [ ] Works in both Classroom setup and Testing picker
+- [ ] Works in both Classroom setup and Testing runner (lane-selection phase)
 
 ---
 
@@ -237,7 +257,7 @@ Show me the component plan before writing, then build it.
 ```
 Build a noise meter widget for RoomRhythm's Classroom profile using the Web Audio API. No new dependencies. Classroom profile only — never in Testing.
 
-1. Create components/NoiseMeter.tsx: (a) a "Start listening" button that requests mic access via navigator.mediaDevices.getUserMedia({ audio: true }); (b) on grant, pipe the stream into an AnalyserNode and compute a smoothed RMS level on requestAnimationFrame; (c) render a large horizontal level bar with three zones (quiet / working / too loud) using the app's existing palette; (d) a draggable threshold marker the teacher sets; (e) when the level holds above threshold for 3+ continuous seconds, play a single gentle chime through the existing sound engine (reuse the current audio utilities and an existing sound from /public/sounds/ — pick the softest one; do not add new audio files) and don't re-trigger for at least 15 seconds.
+1. Create components/NoiseMeter.tsx: (a) a "Start listening" button that requests mic access via navigator.mediaDevices.getUserMedia({ audio: true }); (b) on grant, pipe the stream into an AnalyserNode and compute a smoothed RMS level on requestAnimationFrame; (c) render a large horizontal level bar with three zones (quiet / working / too loud) using the app's existing palette; (d) a draggable threshold marker the teacher sets; (e) when the level holds above threshold for 3+ continuous seconds, play a single gentle chime through the existing synthesized sound engine in lib/audio.ts — reuse the "soft" SoundType (there are no audio files; sounds are synthesized via Web Audio; do not add any audio files) — and don't re-trigger for at least 15 seconds.
 
 2. Permission states: before grant, show a one-line explainer; on deny or no mic, show a calm fallback message with retry — never an error screen. Stop all tracks and close the AudioContext on unmount and when the teacher clicks "Stop".
 
