@@ -9,6 +9,7 @@ import { formatClock } from "@/lib/testing/format";
 import { useAudioEngine } from "@/lib/audio";
 import AdminLog, { type AdminEvent } from "@/components/testing/AdminLog";
 import { SHARE_PARAM, decodeShareConfig, withShareParam } from "@/lib/share";
+import { track } from "@/lib/analytics";
 import TrademarkDisclaimer from "@/components/TrademarkDisclaimer";
 
 type Phase = "setup" | "pre" | "active" | "held" | "done";
@@ -74,6 +75,7 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
           lanes: activeLaneIds,
         }),
       );
+      track("share_link_copied", { surface: "testing_runner" });
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -115,6 +117,8 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
       // behavior under this policy — see resolveAdvance() in lib/testing/runner.ts.
       audio.playEnd();
       setPhase("held");
+      // Only scored sections count as "completed" — breaks/instructions don't.
+      if (seg.kind === "section") track("section_completed", { templateId: template.id });
       log("segment", `${seg.label} reached zero — awaiting proctor`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -140,6 +144,7 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
     setEvents([]);
     eventIdRef.current = 1;
     setPhase("pre");
+    track("template_launched", { templateId: template.id });
     log("segment", `Administration started — ${activeLaneIds.map((id) => laneById(id)?.label).join(", ")}`);
   }
 

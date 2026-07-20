@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAudioEngine } from "@/lib/audio";
+import { track } from "@/lib/analytics";
 
 /**
  * Classroom-only room-volume meter. Never rendered in the Testing profile.
@@ -124,6 +125,7 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
       smoothedRef.current = 0;
       aboveSinceRef.current = null;
       setState("listening");
+      track("noise_meter_started");
       rafRef.current = requestAnimationFrame(loop);
     } catch {
       setState("denied");

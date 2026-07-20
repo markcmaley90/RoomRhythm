@@ -26,7 +26,7 @@
 | P0-6 Projector wordmark | ✅ Done (commit `c12808a`) |
 | P0-7 Random name picker | ✅ Done (commit `db39e1c`) |
 | P0-8 Noise meter | ✅ Done (commit `5e02320`; synthesized "soft" `SoundType` — no audio files) |
-| P1-9 Plausible analytics | ⬜ Not started — **pulled forward: pre-launch** (need referrer data from launch day one; see gtm-launch-kit.md §8) |
+| P1-9 Plausible analytics | ✅ Done (renders nothing until `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` is set) |
 | P1-10 Email capture | ⬜ Not started — **pulled forward: pre-launch** (flywheel needs fuel from post one; see gtm-launch-kit.md §8) |
 | P1-11 Encode strategy into CLAUDE.md | ✅ Done (CLAUDE.md carries positioning + guardrails) |
 | P1-13 Testing runner projector view | ⬜ Not started (surfaced during P0-6; target: before Oct mock-exam push) |

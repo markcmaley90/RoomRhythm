@@ -11,6 +11,7 @@ import {
 } from "@/lib/share";
 import NamePicker from "@/components/NamePicker";
 import NoiseMeter from "@/components/NoiseMeter";
+import { track } from "@/lib/analytics";
 
 // ── Types ──────────────────────────────────────────────────────
 type Profile = "selector" | "classroom" | "corporate";
@@ -514,7 +515,10 @@ function ProfileSelector({ onSelect }: { onSelect: (p: "classroom" | "corporate"
       </div>
       <div className="flex flex-col sm:flex-row gap-6 w-full max-w-4xl">
         {PROFILE_CARDS.map((p) => (
-          <button key={p.id} onClick={() => (p.id === "testing" ? router.push("/testing") : onSelect(p.id))}
+          <button key={p.id} onClick={() => {
+              track("session_started", { profile: p.id });
+              if (p.id === "testing") router.push("/testing"); else onSelect(p.id);
+            }}
             className={`group relative flex-1 flex flex-col items-center gap-4 p-8 rounded-3xl bg-slate-900/80 border border-white/10 border-t-2 ${p.topBorder} text-white text-center shadow-xl transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl ${p.hoverShadow} ${p.hoverBorder}`}>
             <div className={`flex items-center justify-center w-16 h-16 rounded-full ${p.iconBg} transition-transform duration-300 group-hover:scale-110`}>
               <span className="text-4xl leading-none">{p.emoji}</span>
@@ -763,6 +767,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
     };
     try {
       await navigator.clipboard.writeText(withShareParam(window.location.href, cfg));
+      track("share_link_copied", { surface: "classroom" });
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -1205,6 +1210,7 @@ export default function Home() {
     if (cfg?.p === "classroom") {
       setShared(cfg);
       setProfile("classroom");
+      track("session_started", { profile: "classroom" });
     }
   }, []);
 

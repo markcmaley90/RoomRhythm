@@ -10,6 +10,7 @@ import {
   type Roster,
   type RosterStore,
 } from "@/lib/rosters";
+import { track } from "@/lib/analytics";
 
 /**
  * Classroom-only random name picker. Never rendered in the Testing profile.
@@ -70,6 +71,8 @@ export default function NamePicker({ onClose }: { onClose: () => void }) {
     setShuffling(false);
     setPicked(name);
     if (noRepeats) pickedFor(rosterId).add(name);
+    // Usage only — the picked name is never sent.
+    track("name_picker_used");
   }
 
   function pick() {
