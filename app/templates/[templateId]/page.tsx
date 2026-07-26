@@ -12,6 +12,7 @@ import {
 } from "@/lib/testing/schema";
 import { formatDuration, formatClock } from "@/lib/testing/format";
 import TrademarkDisclaimer from "@/components/TrademarkDisclaimer";
+import EmailCapture from "@/components/EmailCapture";
 
 const FREE_TEMPLATE_ID = "seed-final-90";
 
@@ -330,6 +331,11 @@ export default async function TemplateLandingPage({
             </div>
           ))}
         </section>
+
+        {/* Optional email capture — domain-signal fuel. Renders nothing if unconfigured. */}
+        <div className="flex justify-center">
+          <EmailCapture source="template_page" />
+        </div>
 
         {/* (f) Trademark disclaimer */}
         <div className="border-t border-white/10 pt-6">

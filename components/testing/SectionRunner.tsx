@@ -10,6 +10,7 @@ import { useAudioEngine } from "@/lib/audio";
 import AdminLog, { type AdminEvent } from "@/components/testing/AdminLog";
 import { SHARE_PARAM, decodeShareConfig, withShareParam } from "@/lib/share";
 import { track } from "@/lib/analytics";
+import EmailCapture from "@/components/EmailCapture";
 import TrademarkDisclaimer from "@/components/TrademarkDisclaimer";
 
 type Phase = "setup" | "pre" | "active" | "held" | "done";
@@ -537,6 +538,7 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
                 All templates
               </Link>
             </div>
+            <EmailCapture source="run_complete" />
           </div>
         )}
 

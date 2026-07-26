@@ -12,6 +12,7 @@ import {
 import NamePicker from "@/components/NamePicker";
 import NoiseMeter from "@/components/NoiseMeter";
 import { track } from "@/lib/analytics";
+import EmailCapture from "@/components/EmailCapture";
 
 // ── Types ──────────────────────────────────────────────────────
 type Profile = "selector" | "classroom" | "corporate";
@@ -642,6 +643,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
   const [autoBreak, setAutoBreak]           = useState(shared ? shared.autoBreak : true);
   const [emergencyActive, setEmergencyActive] = useState(false);
   const [copied, setCopied]                 = useState(false);
+  const [sharedOnce, setSharedOnce]         = useState(false);
   const [showNames, setShowNames]           = useState(false);
   const [showNoise, setShowNoise]           = useState(false);
 
@@ -769,6 +771,10 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
       await navigator.clipboard.writeText(withShareParam(window.location.href, cfg));
       track("share_link_copied", { surface: "classroom" });
       setCopied(true);
+      // `copied` is only the button's 2-second "✓ Copied!" flash. The email card is
+      // gated on a separate sticky flag — gating it on `copied` would yank the form
+      // away 2 seconds in, mid-typing.
+      setSharedOnce(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Clipboard blocked (insecure context / permission) — fail quietly.
@@ -908,6 +914,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
               <p className="text-[11px] text-center opacity-50">
                 Anyone with this link opens your exact setup — great for subs and co-teachers.
               </p>
+              {sharedOnce && <EmailCapture source="share" />}
             </div>
           </div>
         </div>
