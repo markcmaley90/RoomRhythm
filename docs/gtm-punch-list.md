@@ -27,12 +27,22 @@
 | P0-7 Random name picker | ✅ Done (commit `db39e1c`) |
 | P0-8 Noise meter | ✅ Done (commit `5e02320`; synthesized "soft" `SoundType` — no audio files) |
 | P1-9 Plausible analytics | ✅ Done (renders nothing until `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` is set) |
-| P1-10 Email capture | ⬜ Not started — **pulled forward: pre-launch** (flywheel needs fuel from post one; see gtm-launch-kit.md §8) |
+| P1-10 Email capture | ✅ Done (commit `311572d`) |
 | P1-11 Encode strategy into CLAUDE.md | ✅ Done (CLAUDE.md carries positioning + guardrails) |
 | P1-13 Testing runner projector view | ⬜ Not started (surfaced during P0-6; target: before Oct mock-exam push) |
 | P2-12 Sync spec | ⬜ Post-launch |
 
-**Quiet-launch target: Aug 2, 2026** (per gtm-launch-kit.md). Remaining build order: P0-8 → P1-9 → P1-10.
+**Quiet-launch target: Aug 2, 2026** (per gtm-launch-kit.md). All P0 and pre-launch P1 build items are done.
+
+**Remaining before launch is founder work, not code** — see `docs/launch-verification.md`
+for the browser pass and the founder checklist. The one hard blocker is buying the
+domain and setting `NEXT_PUBLIC_SITE_URL`: until it's set, every absolute URL in
+`sitemap.xml`, `robots.txt`, and the OG tags points at `localhost:3001`.
+
+Post-launch code cleanup (non-blocking): `npm run lint` fails because there's no
+`eslint.config.js`; `app/globals.css` forces Arial on `body`, overriding the Geist
+fonts loaded in `layout.tsx`; `docs/RoomRhythm - Shortcut.lnk` is a stray Windows
+shortcut that shouldn't be tracked.
 
 ---
 
