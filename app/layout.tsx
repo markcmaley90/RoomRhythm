@@ -13,8 +13,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// TODO(launch): Add public/og-image.png (1200×630) before launch. The openGraph
-// and twitter cards below reference /og-image.png and will 404 until it exists.
+// Pinterest site claiming. Pinterest issues a token and looks for it as a
+// <meta name="p:domain_verify"> on the homepage; claiming the domain is what
+// attributes every pin from this site to our profile and unlocks pin analytics.
+// Env var rather than a hardcoded token so it can be set at deploy time, and so
+// an unconfigured build emits no stray meta tag. See docs/gtm-social-profiles.md.
+const pinterestVerify = process.env.NEXT_PUBLIC_PINTEREST_VERIFY;
+
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001"),
   title: {
@@ -33,6 +38,9 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
   },
+  ...(pinterestVerify
+    ? { verification: { other: { "p:domain_verify": pinterestVerify } } }
+    : {}),
 };
 
 export default function RootLayout({
