@@ -72,7 +72,9 @@ def ig_privacy():
     eyebrow(d, W, "privacy, in plain english", 92, EMERALD)
     hl(img, ["Nothing About Your", "Students Leaves", "Your Device."], 150, 74,
        color2=(228, 228, 228))
-    rows = ["No account, ever", "No ads, no trackers", "Rosters stay on your computer",
+    # "No account, ever" would age badly — CLAUDE.md's roadmap has Supabase auth
+    # for the paid tier. "No account needed" stays true either way.
+    rows = ["No account needed", "No ads, no trackers", "Rosters stay on your computer",
             "Exam logs: initials + seat only", "Cookieless analytics"]
     y = 520
     f = sans(31, 600)
@@ -201,7 +203,10 @@ def flyer():
     fp = sans(30, 700)
     d.text((104, y + 24), "Free for every teacher. No account, no ads.", font=fp, fill=(20, 20, 20))
     fp2 = sans(24, 400)
-    d.text((104, y + 66), "No student names, dates of birth, or IDs are ever collected.",
+    # NOTE (compliance): the name picker stores roster names on the teacher's own
+    # device, so "nothing is collected" would be false. Claim the transmission
+    # boundary, not the storage boundary. See lib/rosters.ts and AdminLog.tsx.
+    d.text((104, y + 66), "Rosters stay on your device. Exam logs record initials and seat numbers only.",
            font=fp2, fill=(105, 105, 105))
 
     # byline
@@ -250,7 +255,7 @@ if __name__ == "__main__":
               "Every timing group gets its own countdown and its own announcements, at true wall-clock offsets.",
               TEAL400, pct=.55, lab="22:10")
     card_1200("og-3-privacy.png", "privacy-first by design",
-              ["No login. No ads.", "No student data."],
+              ["No login. No ads.", "Nothing uploaded."],
               "Rosters stay on your device. Exam logs record initials and seat numbers only — never names or IDs.",
               EMERALD, pct=.82, lab="09:12")
     print("Print:")

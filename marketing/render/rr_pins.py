@@ -101,7 +101,7 @@ def pin2():
     f3 = sans(26, 600)
     t = "For teacher-made finals and mock/practice exams"
     d.text(((W - tw(d, t, f3)) / 2, 1240), t, font=f3, fill=(120, 120, 120))
-    footer(img, "Free · No login · No student data")
+    footer(img, "Free · No login · Nothing uploaded")
     save(img, f"{OUT}/pin-2-extended-time.png")
 
 # ── Pin 3 — noise meter ────────────────────────────────────────────────────
@@ -146,7 +146,10 @@ def pin4():
     d.text(((W - tw(d, "TAP TO PICK AGAIN", fs)) / 2, 946), "TAP TO PICK AGAIN",
            font=fs, fill=(115, 115, 115))
 
-    chips(img, ["No account. No ads.", "No student data collected.",
+    # NOTE (compliance): never claim student data is "not collected" — the name
+    # picker stores roster names in localStorage by design. The honest, and
+    # stronger, claim is that nothing is transmitted. See lib/rosters.ts.
+    chips(img, ["No account. No ads.", "Nothing is ever uploaded.",
                 "Just open it and teach."], 1070)
     footer(img)
     save(img, f"{OUT}/pin-4-name-picker.png")
