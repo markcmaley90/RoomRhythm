@@ -37,3 +37,7 @@ CLAUDE.local.md
 # misc
 *.pem
 /coverage
+
+# python renderer caches
+__pycache__/
+*.pyc
