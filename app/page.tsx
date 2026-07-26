@@ -540,7 +540,7 @@ function ProfileSelector({ onSelect }: { onSelect: (p: "classroom" | "corporate"
           RoomRhythm works as a classroom timer for projector displays — Pomodoro-style focus
           blocks, breaks, and transitions in numerals the back row can actually read. The same
           screen runs your assessments, whether you need a final exam timer for a Friday midterm
-          or a full mock section with multiple accommodation lanes. As an exam timer with extended time,
+          or a full mock section with multiple accommodation groups. As an exam timer with extended time,
           it keeps standard and 1.5× students on one display. Every warning shows on screen and plays
           out loud — at the times you set, for every timing group.
         </p>

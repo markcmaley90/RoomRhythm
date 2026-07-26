@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { TestTemplate, Segment } from "@/lib/testing/schema";
-import { segmentDurationFor } from "@/lib/testing/schema";
+import { segmentDurationFor, warningsFor } from "@/lib/testing/schema";
 import { remainingSeconds, warningKey, warningsToFire } from "@/lib/testing/runner";
 import { formatClock } from "@/lib/testing/format";
 import { useAudioEngine } from "@/lib/audio";
@@ -85,15 +85,21 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
   }
 
   // ── Tick: one interval drives re-render; the clock is derived, never accumulated ──
+  // NOTE: a confirm dialog must NOT stop the clock. Deadlines are absolute epoch
+  // times, so real time keeps elapsing behind the (semi-transparent) dialog. If
+  // the tick stopped here the room would watch a frozen clock, mandated warnings
+  // would bunch up and fire late, and the administration log would record a stale
+  // "remaining" for the advance. Only an explicit pause() freezes time, and pause
+  // converts deadlines to remaining first, so that stays correct.
   useEffect(() => {
-    if (phase !== "active" || paused || confirmDialog) return;
+    if (phase !== "active" || paused) return;
     const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
-  }, [phase, paused, confirmDialog]);
+  }, [phase, paused]);
 
   // ── Detection: warnings (unscaled, per lane) + all-lanes-zero → advance ──
   useEffect(() => {
-    if (phase !== "active" || paused || confirmDialog || !seg) return;
+    if (phase !== "active" || paused || !seg) return;
     let allZero = true;
     const fired: { label: string; sound: boolean }[] = [];
     for (const laneId of activeLaneIds) {
@@ -234,6 +240,20 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
       for (const a of after) dls[a.id] = nowMs + a.remaining * 1000;
       setDeadlines(dls);
     }
+    // Re-arm warnings that the added time pushed back into the future. A mandated
+    // "5 minutes remaining" call must still happen after the proctor grants extra
+    // time — without this the key stays in firedRef and the announcement is
+    // silently skipped. Only warnings now strictly above the lane's remaining are
+    // re-armed, so nothing already past re-fires.
+    if (deltaSecs > 0 && seg) {
+      for (const a of after) {
+        for (const w of warningsFor(seg)) {
+          if (a.remaining > w.offsetSeconds) {
+            firedRef.current.delete(warningKey(seg.id, a.id, w.offsetSeconds));
+          }
+        }
+      }
+    }
     setNow(nowMs);
     const sign = deltaSecs >= 0 ? "+" : "−";
     const detail = after.map((a) => `${a.label} ${formatClock(a.remaining)}`).join(", ");
@@ -343,7 +363,7 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
             </p>
 
             <div className="w-full rounded-2xl border border-white/10 bg-neutral-900/70 p-5 text-left">
-              <p className="mb-3 text-xs uppercase tracking-widest text-white/50">Accommodation lanes</p>
+              <p className="mb-3 text-xs uppercase tracking-widest text-white/50">Accommodation groups</p>
               <div className="flex flex-col gap-2">
                 {template.accommodationLanes.map((lane) => {
                   const active = activeLaneIds.includes(lane.id);
@@ -559,7 +579,7 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
             {confirmDialog.kind === "end" ? (
               <>
                 <h2 className="text-lg font-bold">End the administration?</h2>
-                <p className="text-sm text-white/60">This ends the session for all lanes and stops the clocks.</p>
+                <p className="text-sm text-white/60">This ends the session for all timing groups and stops the clocks.</p>
               </>
             ) : confirmDialog.kind === "adjust" ? (
               <>
@@ -567,9 +587,11 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
                   Remove {Math.abs(Math.round(confirmDialog.deltaSecs / 60))} minute
                   {Math.abs(Math.round(confirmDialog.deltaSecs / 60)) !== 1 ? "s" : ""}?
                 </h2>
-                <p className="text-sm text-white/60">This would take a lane to zero — times after removal:</p>
+                <p className="text-sm text-white/60">This would take a timing group to zero — times after removal:</p>
+                {/* Live projection: the clock keeps running while this dialog is
+                    open, so recompute rather than showing the open-time snapshot. */}
                 <ul className="flex flex-col gap-1 text-sm">
-                  {confirmDialog.lanes.map((l) => (
+                  {wouldBeAfter(confirmDialog.deltaSecs).map((l) => (
                     <li key={l.label} className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
                       <span className="text-white/70">{l.label}</span>
                       <span className={`font-mono tabular-nums ${l.remaining <= 0 ? "text-red-400" : "text-amber-300"}`}>
@@ -586,10 +608,11 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
                   {confirmDialog.isBreak ? "End break early for everyone?" : `End “${confirmDialog.segLabel}” early?`}
                 </h2>
                 <p className="text-sm text-white/60">
-                  {confirmDialog.isBreak ? "Time still on the clock:" : "Some lanes still have time remaining:"}
+                  {confirmDialog.isBreak ? "Time still on the clock:" : "Some timing groups still have time remaining:"}
                 </p>
+                {/* Live: the clock keeps running behind this dialog. */}
                 <ul className="flex flex-col gap-1 text-sm">
-                  {confirmDialog.lanes.map((l) => (
+                  {laneRemainings().map((l) => (
                     <li key={l.label} className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
                       <span className="text-white/70">{l.label}</span>
                       <span className={`font-mono tabular-nums ${l.remaining > 0 ? "text-amber-300" : "text-white/40"}`}>
@@ -617,7 +640,7 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
                     ? "Remove time"
                     : confirmDialog.isBreak
                       ? "End break early"
-                      : "End early for all lanes"}
+                      : "End early for all timing groups"}
               </button>
             </div>
           </div>

@@ -8,7 +8,7 @@ import TrademarkDisclaimer from "@/components/TrademarkDisclaimer";
 export const metadata: Metadata = {
   title: "Testing Templates",
   description:
-    "Pick a timing template — mock exams, finals, and certification sessions — and run it with standard and extended-time accommodation lanes side by side.",
+    "Pick a timing template — mock exams, finals, and certification sessions — and run it with standard and extended-time accommodation groups side by side.",
 };
 
 /** The standard (1×) lane; validateTemplate guarantees one exists. */
@@ -36,7 +36,7 @@ export default function TestingPickerPage() {
         <div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Choose a template</h1>
           <p className="mt-2 max-w-2xl text-sm text-white/50 leading-relaxed">
-            Each template runs standard and extended-time lanes side by side, fires mandated
+            Each template runs standard and extended-time timing groups side by side, fires mandated
             warnings for every timing group, and keeps a PII-free administration log.
           </p>
         </div>

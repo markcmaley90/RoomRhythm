@@ -72,13 +72,13 @@ function seoDescription(t: TestTemplate): string {
   const bits = [
     `${n} section${n !== 1 ? "s" : ""}`,
     total,
-    extendedLanes(t).length ? `extended-time lanes (${extLabel(t)})` : null,
+    extendedLanes(t).length ? `extended-time timing groups (${extLabel(t)})` : null,
     hasBreaks(t) ? "section breaks" : null,
   ]
     .filter(Boolean)
     .join(", ");
   const lead = isFree(t) ? "Free, projector-ready" : "Projector-ready";
-  return `${lead} timer for ${shortName(t)}: ${bits}. Per-lane warnings on screen and out loud, gated advance, PII-free administration log. Mock/practice timing only.`;
+  return `${lead} timer for ${shortName(t)}: ${bits}. Warnings on screen and out loud for every timing group, gated advance, PII-free administration log. Mock/practice timing only.`;
 }
 
 function leadPhrase(t: TestTemplate): string {
@@ -129,7 +129,7 @@ function faqs(t: TestTemplate): { q: string; a: string }[] {
   const q3 = {
     q: "Does it support extended-time accommodations?",
     a: ext.length
-      ? `Yes. Standard and extended-time lanes (${extLabel(t)}) run side by side on one screen, each with its own countdown. Warnings are wall-clock, not scaled — a "5 minutes remaining" cue fires at 5 real minutes on every lane — and they show on screen and play out loud. Advance is gated (nothing moves on until the proctor confirms), and the administration log records initials and seat numbers only.`
+      ? `Yes. Standard and extended-time timing groups (${extLabel(t)}) run side by side on one screen, each with its own countdown. Warnings are wall-clock, not scaled — a "5 minutes remaining" cue fires at 5 real minutes for every timing group — and they show on screen and play out loud. Advance is gated (nothing moves on until the proctor confirms), and the administration log records initials and seat numbers only.`
       : `Standard timing runs on one screen with on-screen and audible warnings, gated advance, and a PII-free administration log (initials and seat numbers only).`,
   };
 
@@ -239,7 +239,7 @@ export default async function TemplateLandingPage({
               <tfoot>
                 <tr className="border-t border-white/10 bg-white/5">
                   <td className="px-4 py-3" colSpan={3}>
-                    <span className="text-xs uppercase tracking-wide text-white/50">Total · standard lane</span>
+                    <span className="text-xs uppercase tracking-wide text-white/50">Total · standard timing</span>
                   </td>
                   <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums text-amber-300">
                     {formatDuration(total)}
@@ -250,7 +250,7 @@ export default async function TemplateLandingPage({
           </div>
           {extendedLanes(t).length > 0 && (
             <p className="text-xs text-white/40">
-              Extended-time lanes ({extLabel(t)}) scale each timed section proportionally; breaks stay the same length.
+              Extended-time timing groups ({extLabel(t)}) scale each timed section proportionally; breaks stay the same length.
             </p>
           )}
         </section>
@@ -262,7 +262,7 @@ export default async function TemplateLandingPage({
             <li className="flex gap-3">
               <span className="text-amber-400">◆</span>
               <span>
-                <strong className="font-semibold text-white/90">Extended-time accommodation lanes.</strong>{" "}
+                <strong className="font-semibold text-white/90">Extended-time accommodation groups.</strong>{" "}
                 {t.accommodationLanes.map((l) => (l.timeMultiplier === 1 ? "Standard" : `${l.timeMultiplier}×`)).join(" · ")} run
                 side by side on one screen, each with its own countdown.
               </span>
@@ -270,7 +270,7 @@ export default async function TemplateLandingPage({
             <li className="flex gap-3">
               <span className="text-amber-400">◆</span>
               <span>
-                <strong className="font-semibold text-white/90">Warnings on screen and out loud.</strong> Each lane fires its
+                <strong className="font-semibold text-white/90">Warnings on screen and out loud.</strong> Each timing group fires its
                 cues at true wall-clock offsets — never scaled by the accommodation multiplier.
               </span>
             </li>
