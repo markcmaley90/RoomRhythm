@@ -37,6 +37,32 @@ flip the switch. Run `npm run dev`, open `http://localhost:3001`.
 7. Warnings fire at true wall-clock offsets: the 1.5× group hits "5 minutes
    remaining" at 5 real minutes of *its own* time, later than standard.
 
+## Browser pass — the three critical fixes (commit `8c06c3d`)
+
+These came out of a code review, not a browser session. **The timer change touches
+the daily-use core and is the highest-risk edit in the repo — check it first.**
+
+A. **Timer no longer drifts when backgrounded.** Start a 5-minute focus block.
+   Note the wall-clock time. Switch to another tab or minimize for 3+ minutes,
+   then come back. The countdown should reflect *real* elapsed time — if 3
+   minutes passed, it shows ~2:00 left, not ~4:40. Before the fix it ran long.
+B. **Pause and resume still work.** Pause mid-block, wait 30 seconds, resume.
+   It must continue from where it paused — **not** jump to 0:00. This is the
+   specific way the deadline rewrite could have broken; it's worth two tries.
+C. **±5s arrow keys still work** on the running timer, and **no longer fire while
+   typing**. Open "Suggest a Feature" mid-block, arrow around the textarea, and
+   confirm the countdown does not move.
+D. **Emergency alarm can't be orphaned.** Start the alarm, then hit "← Rooms"
+   without stopping it. It must go silent. Before the fix it played forever with
+   no way to stop it short of reloading.
+E. **Microphone is released.** Open the noise meter, start it, close it. The
+   browser's recording indicator (tab dot / menu-bar icon) must go out. Then:
+   open it, click Start, and close the panel *while the permission prompt is
+   still up* — the mic must never turn on. Check the indicator again.
+F. **Mic error states.** If you can, test with the mic disabled in system
+   settings — you should get "No microphone was found," not the "blocked, allow
+   it in the address bar" message.
+
 ## Browser pass — Classroom
 
 8. Focus slider bottoms out at **0m** in every grade band.
