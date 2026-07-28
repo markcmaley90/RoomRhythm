@@ -648,6 +648,9 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
   const [showNoise, setShowNoise]           = useState(false);
 
   const intervalRef      = useRef<NodeJS.Timeout | null>(null);
+  // Wall-clock moment the running block ends. null = needs re-anchoring (paused,
+  // idle, or the duration just changed). See the timer tick effect.
+  const deadlineRef      = useRef<number | null>(null);
   const totalDurationRef = useRef<number>(0);
   const warningFiredRef  = useRef(false);
   const modeRef          = useRef(mode);
@@ -676,11 +679,32 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
     }
   }, [secondsLeft, running, playFinalBeep]);
 
-  // Timer tick
+  // Timer tick — DEADLINE-BASED, never accumulated.
+  //
+  // The clock stores the wall-clock moment the block ends and derives the
+  // display from it. Decrementing by 1 per interval firing looks equivalent but
+  // silently runs long: browsers throttle timers in backgrounded tabs (Chrome
+  // drops to roughly once a minute after a few minutes hidden), so a teacher who
+  // alt-tabs to a gradebook for 20 minutes comes back to a projector still
+  // showing ~19 of those minutes as remaining. A 50-minute block can overrun the
+  // period. Deriving from a deadline makes throttling cosmetic — the display
+  // catches up on the next firing. components/testing/SectionRunner.tsx has
+  // followed this rule from the start; this brings Classroom/Corporate in line.
+  //
+  // deadlineRef is nulled by every path that sets secondsLeft imperatively, and
+  // re-anchored here, so pause/resume and ±5s adjustments all stay correct.
   useEffect(() => {
     if (running && secondsLeft > 0) {
-      intervalRef.current = setInterval(() => setSecondsLeft((s) => s - 1), 1000);
+      if (deadlineRef.current === null) {
+        deadlineRef.current = Date.now() + secondsLeft * 1000;
+      }
+      intervalRef.current = setInterval(() => {
+        const dl = deadlineRef.current;
+        if (dl === null) return;
+        setSecondsLeft(Math.max(0, Math.ceil((dl - Date.now()) / 1000)));
+      }, 250);
     } else if (secondsLeft === 0 && running) {
+      deadlineRef.current = null;
       setRunning(false);
       playEnd();
       triggerFlash();
@@ -708,12 +732,23 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
       document.title = running ? `${formatTime(secondsLeft)} — RoomRhythm` : "RoomRhythm";
   }, [secondsLeft, running, showCalmCD, showFocusCD]);
 
-  // Keyboard ↑↓
+  // Keyboard ↑↓ — ignored while the teacher is typing. Without the target check,
+  // using arrow keys to move around the "Suggest a Feature" textarea also
+  // silently shifts the projected countdown by ±5s per keypress.
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (!running) return;
-      if (e.key === "ArrowUp")   setSecondsLeft((s) => Math.min(s + 5, 5999));
-      if (e.key === "ArrowDown") setSecondsLeft((s) => Math.max(s - 5, 0));
+      const el = e.target as HTMLElement | null;
+      const tag = el?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el?.isContentEditable) return;
+      if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+      const delta = e.key === "ArrowUp" ? 5 : -5;
+      setSecondsLeft((s) => {
+        const next = Math.min(Math.max(s + delta, 0), 5999);
+        // Shift the anchor too, or the next tick would immediately undo this.
+        if (deadlineRef.current !== null) deadlineRef.current += (next - s) * 1000;
+        return next;
+      });
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
@@ -722,6 +757,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
   function activateMode(m: ClassroomMode) {
     if (intervalRef.current) clearInterval(intervalRef.current);
     warningFiredRef.current = false;
+    deadlineRef.current = null; // re-anchor from the new duration
     const secs = m === "calm" ? 0 : m === "focus" ? customMinutesRef.current * 60 : band.breakMin * 60;
     totalDurationRef.current = secs;
     setMode(m); setSecondsLeft(secs);
@@ -731,6 +767,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
   function handleCalmClick() {
     if (intervalRef.current) clearInterval(intervalRef.current);
     warningFiredRef.current = false;
+    deadlineRef.current = null;
     setRunning(false); setMode("calm"); setSecondsLeft(0);
     if (!muted) playAttention();
     setShowCalmCD(true);
@@ -743,14 +780,24 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
     totalDurationRef.current = secs;
     if (intervalRef.current) clearInterval(intervalRef.current);
     warningFiredRef.current = false;
+    deadlineRef.current = null;
     setMode("focus");
     setSecondsLeft(secs);
     setRunning(true);
   }
 
+  // Pausing must drop the anchor: secondsLeft is frozen and correct, but the old
+  // deadline is now in the past, so resuming without re-anchoring would snap the
+  // clock straight to 0:00.
+  function togglePause() {
+    deadlineRef.current = null;
+    setRunning((r) => !r);
+  }
+
   function handleReset() {
     if (intervalRef.current) clearInterval(intervalRef.current);
     warningFiredRef.current = false;
+    deadlineRef.current = null;
     setRunning(false); setMode("idle"); setSecondsLeft(0);
     setShowCalmCD(false); setShowFocusCD(false);
     document.title = "RoomRhythm";
@@ -789,6 +836,17 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
     setEmergencyActive(false);
     stopEmergencyRef.current?.(); stopEmergencyRef.current = null;
   }
+
+  // The alarm is a self-rescheduling setTimeout loop inside lib/audio.ts, fully
+  // independent of React. If this screen unmounts while it's sounding (teacher
+  // hits "← Rooms" without stopping it first) nothing can ever silence it — the
+  // only UI that holds the stop handle is gone, and starting a new alarm builds
+  // a second AudioContext that layers on top instead of replacing it. Reloading
+  // the page would be the only escape. Always release on unmount.
+  useEffect(() => () => {
+    stopEmergencyRef.current?.();
+    stopEmergencyRef.current = null;
+  }, []);
 
   if (projector) return <ProjectorView secondsLeft={secondsLeft} label={config.label} emoji={config.emoji} nearEnd={nearEnd} totalDuration={totalDurationRef.current} accent="#818cf8" onExit={() => setProjector(false)} />;
 
@@ -930,7 +988,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
       {/* Pause / Reset — secondary */}
       {mode !== "idle" && !showCalmCD && (
         <div className="flex gap-3">
-          <button onClick={() => setRunning((r) => !r)} className="px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-medium transition-all">
+          <button onClick={togglePause} className="px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-medium transition-all">
             {running ? "⏸ Pause" : "▶ Resume"}
           </button>
           <button onClick={handleReset} className="px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-medium transition-all">↺ Reset</button>
@@ -966,6 +1024,9 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
   const [currentRecharge, setCurrentRecharge] = useState(CORPORATE_RECHARGES[0]);
 
   const intervalRef      = useRef<NodeJS.Timeout | null>(null);
+  // Wall-clock moment the running block ends. null = needs re-anchoring (paused,
+  // idle, or the duration just changed). See the timer tick effect.
+  const deadlineRef      = useRef<number | null>(null);
   const totalDurationRef = useRef<number>(0);
   const warningFiredRef  = useRef(false);
   const modeRef          = useRef(mode);
@@ -996,9 +1057,20 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
   }, [secondsLeft, running, playFinalBeep]);
 
   useEffect(() => {
+    // Deadline-based, never accumulated — see the matching comment in
+    // ClassroomApp. A decremented counter runs long whenever the tab is
+    // backgrounded and the browser throttles timers.
     if (running && secondsLeft > 0) {
-      intervalRef.current = setInterval(() => setSecondsLeft((s) => s - 1), 1000);
+      if (deadlineRef.current === null) {
+        deadlineRef.current = Date.now() + secondsLeft * 1000;
+      }
+      intervalRef.current = setInterval(() => {
+        const dl = deadlineRef.current;
+        if (dl === null) return;
+        setSecondsLeft(Math.max(0, Math.ceil((dl - Date.now()) / 1000)));
+      }, 250);
     } else if (secondsLeft === 0 && running) {
+      deadlineRef.current = null;
       setRunning(false); playEnd(); triggerFlash(); warningFiredRef.current = false;
       const m = modeRef.current;
       if (m === "work") {
@@ -1024,8 +1096,16 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (!running) return;
-      if (e.key === "ArrowUp")   setSecondsLeft((s) => Math.min(s + 5, 5999));
-      if (e.key === "ArrowDown") setSecondsLeft((s) => Math.max(s - 5, 0));
+      const el = e.target as HTMLElement | null;
+      const tag = el?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el?.isContentEditable) return;
+      if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+      const delta = e.key === "ArrowUp" ? 5 : -5;
+      setSecondsLeft((s) => {
+        const next = Math.min(Math.max(s + delta, 0), 5999);
+        if (deadlineRef.current !== null) deadlineRef.current += (next - s) * 1000;
+        return next;
+      });
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
@@ -1034,6 +1114,7 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
   function activateCorporateMode(m: CorporateMode) {
     if (intervalRef.current) clearInterval(intervalRef.current);
     warningFiredRef.current = false;
+    deadlineRef.current = null; // re-anchor from the new duration
     const secs = m === "attention" ? 0 : m === "work" ? blockMinutesRef.current * 60 : breakMinutesRef.current * 60;
     totalDurationRef.current = secs;
     if (m === "recharge") setCurrentRecharge(randomRecharge());
@@ -1044,6 +1125,7 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
   function handleCalmClick() {
     if (intervalRef.current) clearInterval(intervalRef.current);
     warningFiredRef.current = false;
+    deadlineRef.current = null;
     setRunning(false); setCorporateMode("attention"); setSecondsLeft(0);
     if (!muted) playAttention();
     setShowCalmCD(true);
@@ -1057,14 +1139,22 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
     if (intervalRef.current) clearInterval(intervalRef.current);
     warningFiredRef.current = false;
     setCurrentBlock(1); currentBlockRef.current = 1;
+    deadlineRef.current = null;
     setCorporateMode("work");
     setSecondsLeft(secs);
     setRunning(true);
   }
 
+  // Pausing drops the anchor; resuming re-anchors from the frozen secondsLeft.
+  function togglePause() {
+    deadlineRef.current = null;
+    setRunning((r) => !r);
+  }
+
   function handleReset() {
     if (intervalRef.current) clearInterval(intervalRef.current);
     warningFiredRef.current = false;
+    deadlineRef.current = null;
     setRunning(false); setCorporateMode("idle"); setSecondsLeft(0); setCurrentBlock(1);
     setShowCalmCD(false); setShowFocusCD(false);
     document.title = "RoomRhythm";
@@ -1072,6 +1162,12 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
 
   function handleEmergencyActivate() { setEmergencyActive(true); stopEmergencyRef.current = startEmergencyAlarm(); }
   function handleEmergencyDeactivate() { setEmergencyActive(false); stopEmergencyRef.current?.(); stopEmergencyRef.current = null; }
+
+  // See ClassroomApp: an alarm left running past unmount can never be silenced.
+  useEffect(() => () => {
+    stopEmergencyRef.current?.();
+    stopEmergencyRef.current = null;
+  }, []);
 
   if (projector) return <ProjectorView secondsLeft={secondsLeft} label={config.label} emoji={config.emoji} nearEnd={nearEnd} totalDuration={totalDurationRef.current} accent="#2dd4bf" onExit={() => setProjector(false)} />;
 
@@ -1195,7 +1291,7 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
 
       {mode !== "idle" && !showCalmCD && (
         <div className="flex gap-3">
-          <button onClick={() => setRunning((r) => !r)} className="px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-medium transition-all">{running ? "⏸ Pause" : "▶ Resume"}</button>
+          <button onClick={togglePause} className="px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-medium transition-all">{running ? "⏸ Pause" : "▶ Resume"}</button>
           <button onClick={handleReset} className="px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-medium transition-all">↺ Reset</button>
         </div>
       )}

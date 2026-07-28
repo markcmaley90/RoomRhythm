@@ -14,7 +14,7 @@ import { track } from "@/lib/analytics";
  * the room back through the speakers).
  */
 
-type MeterState = "idle" | "listening" | "denied" | "unsupported";
+type MeterState = "idle" | "listening" | "denied" | "nomic" | "busy" | "unsupported";
 
 const PRIVACY_LINE =
   "Sound is analyzed on this device in real time — nothing is recorded or transmitted.";
@@ -64,8 +64,17 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
     if (ctx && ctx.state !== "closed") ctx.close().catch(() => {});
   }, []);
 
-  // Always release the mic on unmount.
-  useEffect(() => teardown, [teardown]);
+  // Always release the mic on unmount. `closedRef` additionally tells an
+  // in-flight getUserMedia() that it came back to a dead component — see start().
+  const closedRef = useRef(false);
+  const startingRef = useRef(false);
+  useEffect(() => {
+    closedRef.current = false;
+    return () => {
+      closedRef.current = true;
+      teardown();
+    };
+  }, [teardown]);
 
   const loop = useCallback(() => {
     const analyser = analyserRef.current;
@@ -107,8 +116,22 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
       setState("unsupported");
       return;
     }
+    // Reentrancy guard: the button stays visible until state flips to
+    // "listening", which only happens after the await below. Two fast clicks
+    // would otherwise open two mic streams and leak the first one — teardown()
+    // can only ever stop whatever the refs currently point at.
+    if (startingRef.current) return;
+    startingRef.current = true;
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // The teacher may have closed the meter while the permission prompt was
+      // up. Nothing else will release this stream if we don't do it here: the
+      // unmount cleanup already ran, and it found streamRef still null.
+      if (closedRef.current) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
       streamRef.current = stream;
       const Ctor =
         window.AudioContext ||
@@ -127,8 +150,19 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
       setState("listening");
       track("noise_meter_started");
       rafRef.current = requestAnimationFrame(loop);
-    } catch {
-      setState("denied");
+    } catch (err) {
+      // Distinguish the three real causes — telling a teacher with no
+      // microphone to "allow access in the address bar" sends them chasing a
+      // permission that was never requested.
+      const name = (err as { name?: string } | null)?.name;
+      if (closedRef.current) return;
+      setState(name === "NotFoundError" || name === "OverconstrainedError"
+        ? "nomic"
+        : name === "NotReadableError"
+          ? "busy"
+          : "denied");
+    } finally {
+      startingRef.current = false;
     }
   }
 
@@ -225,10 +259,38 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
               Try again
             </button>
           </div>
+        ) : state === "nomic" ? (
+          <div className="flex flex-col items-start gap-3 rounded-2xl bg-white/5 p-5">
+            <p className="text-sm text-white/70">
+              No microphone was found on this computer, so the meter can&apos;t read the room. If you have
+              one plugged in, check it&apos;s selected in your system sound settings — everything else in
+              RoomRhythm works normally.
+            </p>
+            <button
+              onClick={start}
+              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-indigo-500"
+            >
+              Try again
+            </button>
+          </div>
+        ) : state === "busy" ? (
+          <div className="flex flex-col items-start gap-3 rounded-2xl bg-white/5 p-5">
+            <p className="text-sm text-white/70">
+              Another app is using the microphone right now — a video call is the usual culprit. Close it
+              and try again; everything else in RoomRhythm works normally.
+            </p>
+            <button
+              onClick={start}
+              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-indigo-500"
+            >
+              Try again
+            </button>
+          </div>
         ) : state === "unsupported" ? (
           <div className="flex flex-col items-start gap-3 rounded-2xl bg-white/5 p-5">
             <p className="text-sm text-white/70">
-              This browser doesn&apos;t offer microphone access, so the noise meter isn&apos;t available here.
+              The microphone isn&apos;t available here. This usually means the page is being served over
+              an insecure connection (browsers only allow microphone access over https).
               Everything else in RoomRhythm works normally.
             </p>
           </div>
