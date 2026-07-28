@@ -168,8 +168,11 @@ function CountdownOverlay({
   const bg = `hsl(${hue}, ${sat}%, ${lit}%)`;
 
   return (
+    // z-30 keeps this above the room UI but BELOW the emergency button (z-40).
+    // At z-50 the overlay hid and blocked the alarm control for the whole 4–6s
+    // calm transition — the one moment you'd least want it unreachable.
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+      className="fixed inset-0 z-30 flex flex-col items-center justify-center"
       style={{ backgroundColor: bg, opacity: mounted ? 1 : 0, transition: "background-color 1s ease, opacity 0.3s ease" }}
     >
       {phase === "countdown" && count > 0 && (
@@ -239,6 +242,16 @@ function useTabSnapBack(running: boolean, secondsLeft: number, onReturnFlash: ()
   const wasHiddenRef  = useRef(false);
   const flashTitleRef = useRef<NodeJS.Timeout | null>(null);
   const originalTitle = useRef(document.title);
+  // True while the tab title is alternating. The per-tick title effects in
+  // ClassroomApp/CorporateApp read this and stand down, or they'd overwrite
+  // every flash with the plain countdown a fraction of a second later.
+  const flashingRef   = useRef(false);
+  const firedAtRef    = useRef(false);
+
+  const stopFlash = useCallback(() => {
+    if (flashTitleRef.current) { clearInterval(flashTitleRef.current); flashTitleRef.current = null; }
+    flashingRef.current = false;
+  }, []);
 
   // Request notification permission once on mount
   useEffect(() => {
@@ -254,46 +267,53 @@ function useTabSnapBack(running: boolean, secondsLeft: number, onReturnFlash: ()
       } else {
         if (wasHiddenRef.current && running) onReturnFlash();
         wasHiddenRef.current = false;
-        if (flashTitleRef.current) {
-          clearInterval(flashTitleRef.current);
-          flashTitleRef.current = null;
-        }
+        stopFlash(); // they're looking at it again; stop shouting in the title
       }
     }
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [running, onReturnFlash]);
 
+  // Re-arm once the clock leaves the warning window, so the next block warns too.
   useEffect(() => {
-    if (running && secondsLeft === 60) {
-      playWarning();
-      if (document.hidden) {
-        // Desktop notification — clicking it brings the user back
-        if ("Notification" in window && Notification.permission === "granted") {
-          const n = new Notification("⚠️ 1 minute left — RoomRhythm", {
-            body: "Time is almost up. Click to return.",
-            tag: "roomrhythm-warning",
-          });
-          n.onclick = () => { window.focus(); n.close(); };
-        }
-        // Aggressive title flash
-        let tick = 0;
-        originalTitle.current = document.title;
-        if (flashTitleRef.current) clearInterval(flashTitleRef.current);
-        flashTitleRef.current = setInterval(() => {
-          document.title = tick % 2 === 0 ? "⚠️ 1 MIN LEFT — RoomRhythm" : "🔴 TIMER ENDING SOON";
-          tick++;
-          if (tick > 40) {
-            if (flashTitleRef.current) clearInterval(flashTitleRef.current);
-            flashTitleRef.current = null;
-          }
-        }, 400);
-      }
+    if (!running || secondsLeft > 60) firedAtRef.current = false;
+  }, [running, secondsLeft]);
+
+  useEffect(() => {
+    if (!running || secondsLeft > 60 || secondsLeft <= 0 || firedAtRef.current) return;
+    firedAtRef.current = true;
+    playWarning();
+    if (!document.hidden) return;
+
+    // Desktop notification — clicking it brings the user back
+    if ("Notification" in window && Notification.permission === "granted") {
+      const n = new Notification("⚠️ 1 minute left — RoomRhythm", {
+        body: "Time is almost up. Click to return.",
+        tag: "roomrhythm-warning",
+      });
+      n.onclick = () => { window.focus(); n.close(); };
     }
-    return () => {
-      if (flashTitleRef.current) { clearInterval(flashTitleRef.current); flashTitleRef.current = null; }
-    };
+
+    // Aggressive title flash, ~16s. NOTE: deliberately NOT torn down in this
+    // effect's cleanup. This effect re-runs every second while the clock ticks,
+    // so a cleanup here would kill the interval one second after starting it —
+    // the flash used to manage two flips instead of forty. It is stopped by
+    // stopFlash(): on tick 40, on the tab becoming visible, or on unmount.
+    let tick = 0;
+    originalTitle.current = document.title;
+    stopFlash();
+    flashingRef.current = true;
+    flashTitleRef.current = setInterval(() => {
+      document.title = tick % 2 === 0 ? "⚠️ 1 MIN LEFT — RoomRhythm" : "🔴 TIMER ENDING SOON";
+      tick++;
+      if (tick > 40) stopFlash();
+    }, 400);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [secondsLeft, running]);
+
+  useEffect(() => stopFlash, [stopFlash]);   // unmount only
+
+  return flashingRef;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -351,6 +371,46 @@ function wordmarkHost(): string {
   } catch {
     return "roomrhythm.app";
   }
+}
+
+/**
+ * Guard shown before a running block is thrown away.
+ *
+ * The Calm / Focus / Break buttons stay live while a block runs, which is
+ * deliberate — a teacher needs to cut a block short without hunting for a menu.
+ * But an unguarded click discards the block instantly, and it is a click a
+ * passing student can make. So: warn, show what is actually on the clock, and
+ * let it proceed. Same posture as the Testing runner's early-advance dialog,
+ * which never blocks the proctor but never lets them do it by accident either.
+ */
+function InterruptDialog({ remaining, currentLabel, nextLabel, onCancel, onConfirm }: {
+  remaining: number; currentLabel: string; nextLabel: string;
+  onCancel: () => void; onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-6">
+      <div className="flex w-full max-w-md flex-col gap-4 rounded-2xl border border-white/10 bg-neutral-900 p-6 shadow-2xl">
+        <h2 className="text-lg font-bold text-white">End {currentLabel} early?</h2>
+        <p className="text-sm text-white/60">
+          There{"’"}s still time on the clock. Starting {nextLabel} now will discard it.
+        </p>
+        <div className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
+          <span className="text-sm text-white/70">{currentLabel} remaining</span>
+          <span className="font-mono tabular-nums text-amber-300">{formatTime(remaining)}</span>
+        </div>
+        <div className="mt-1 flex justify-end gap-3">
+          <button onClick={onCancel}
+            className="rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-white/20">
+            Keep running
+          </button>
+          <button onClick={onConfirm} autoFocus
+            className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition-colors hover:bg-amber-400">
+            Start {nextLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function ProjectorView({ secondsLeft, label, emoji, nearEnd, totalDuration, onExit, accent = "#818cf8", showWordmark = true }: {
@@ -630,6 +690,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
   const [customMinutes, setCustomMinutes]   = useState(initMinutes);
   const [secondsLeft, setSecondsLeft]       = useState(0);
   const [running, setRunning]               = useState(false);
+  const [pendingMode, setPendingMode]       = useState<ClassroomMode | null>(null);
   const [muted, setMuted]                   = useState(false);
   const [soundType, setSoundType]           = useState<SoundType>(shared?.sound ?? "chime");
   const [currentBreak, setCurrentBreak]     = useState(BRAIN_BREAKS[0]);
@@ -670,7 +731,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const triggerFlash = useCallback(() => setFlashTrigger((n) => n + 1), []);
 
-  useTabSnapBack(running, secondsLeft, triggerFlash, playOneMinuteWarning);
+  const titleFlashing = useTabSnapBack(running, secondsLeft, triggerFlash, playOneMinuteWarning);
 
   // Final 3-2-1 beeps
   useEffect(() => {
@@ -728,7 +789,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
 
   // Tab title
   useEffect(() => {
-    if (!showCalmCD && !showFocusCD)
+    if (!showCalmCD && !showFocusCD && !titleFlashing.current)
       document.title = running ? `${formatTime(secondsLeft)} — RoomRhythm` : "RoomRhythm";
   }, [secondsLeft, running, showCalmCD, showFocusCD]);
 
@@ -784,6 +845,29 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
     setMode("focus");
     setSecondsLeft(secs);
     setRunning(true);
+  }
+
+  // Ask before discarding a running block. Returns true if it handled the click
+  // by opening the dialog; false means "nothing to protect, go ahead".
+  function guardInterrupt(next: "calm" | "focus" | "break"): boolean {
+    if (!running || secondsLeft <= 0) return false;
+    setPendingMode(next);
+    return true;
+  }
+  function requestMode(m: ClassroomMode) {
+    if (m !== "calm" && guardInterrupt(m as "focus" | "break")) return;
+    activateMode(m);
+  }
+  function requestCalm() {
+    if (guardInterrupt("calm")) return;
+    handleCalmClick();
+  }
+  function confirmPending() {
+    const m = pendingMode;
+    setPendingMode(null);
+    if (!m) return;
+    if (m === "calm") handleCalmClick();
+    else activateMode(m);
   }
 
   // Pausing must drop the anchor: secondsLeft is frozen and correct, but the old
@@ -877,6 +961,15 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
       </RoomTopBar>
 
       {showFeedback && <FeedbackModal profile="classroom" onClose={() => setShowFeedback(false)} />}
+      {pendingMode && (
+        <InterruptDialog
+          remaining={secondsLeft}
+          currentLabel={CLASSROOM_MODES[mode].label}
+          nextLabel={pendingMode === "calm" ? "Calm Down" : CLASSROOM_MODES[pendingMode].label}
+          onCancel={() => setPendingMode(null)}
+          onConfirm={confirmPending}
+        />
+      )}
       {showNames && <NamePicker onClose={() => setShowNames(false)} />}
       {showNoise && <NoiseMeter muted={muted} onClose={() => setShowNoise(false)} />}
       <EmergencyButton onActivate={handleEmergencyActivate} onDeactivate={handleEmergencyDeactivate} />
@@ -980,9 +1073,9 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
 
       {/* Main Buttons — Focus is the primary action */}
       <div className="flex gap-3 mb-5 flex-wrap justify-center">
-        <button onClick={handleCalmClick} className="px-6 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white text-base font-semibold transition-all shadow-lg shadow-sky-500/25 hover:-translate-y-0.5">🔔 Calm</button>
-        <button onClick={() => activateMode("focus")} className="px-8 py-3.5 rounded-2xl bg-teal-600 hover:bg-teal-500 text-white text-base font-semibold transition-all shadow-lg shadow-teal-500/25 hover:-translate-y-0.5">⏱ Focus</button>
-        <button onClick={() => activateMode("break")} className="px-6 py-3.5 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white text-base font-semibold transition-all shadow-lg shadow-amber-500/25 hover:-translate-y-0.5">🌿 Break</button>
+        <button onClick={requestCalm} className="px-6 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white text-base font-semibold transition-all shadow-lg shadow-sky-500/25 hover:-translate-y-0.5">🔔 Calm</button>
+        <button onClick={() => requestMode("focus")} className="px-8 py-3.5 rounded-2xl bg-teal-600 hover:bg-teal-500 text-white text-base font-semibold transition-all shadow-lg shadow-teal-500/25 hover:-translate-y-0.5">⏱ Focus</button>
+        <button onClick={() => requestMode("break")} className="px-6 py-3.5 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white text-base font-semibold transition-all shadow-lg shadow-amber-500/25 hover:-translate-y-0.5">🌿 Break</button>
       </div>
 
       {/* Pause / Reset — secondary */}
@@ -1012,6 +1105,7 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
   const [breakMinutes, setBreakMinutes]   = useState(5);
   const [secondsLeft, setSecondsLeft]     = useState(0);
   const [running, setRunning]             = useState(false);
+  const [pendingMode, setPendingMode]     = useState<CorporateMode | null>(null);
   const [muted, setMuted]                 = useState(false);
   const [soundType, setSoundType]         = useState<SoundType>("chime");
   const [flashTrigger, setFlashTrigger]   = useState(0);
@@ -1047,7 +1141,7 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const triggerFlash = useCallback(() => setFlashTrigger((n) => n + 1), []);
 
-  useTabSnapBack(running, secondsLeft, triggerFlash, playOneMinuteWarning);
+  const titleFlashing = useTabSnapBack(running, secondsLeft, triggerFlash, playOneMinuteWarning);
 
   // Final 3-2-1 beeps
   useEffect(() => {
@@ -1089,7 +1183,7 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
   }, [running, secondsLeft, autoBreak]);
 
   useEffect(() => {
-    if (!showCalmCD && !showFocusCD)
+    if (!showCalmCD && !showFocusCD && !titleFlashing.current)
       document.title = running ? `${formatTime(secondsLeft)} — RoomRhythm` : "RoomRhythm";
   }, [secondsLeft, running, showCalmCD, showFocusCD]);
 
@@ -1115,6 +1209,14 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
     if (intervalRef.current) clearInterval(intervalRef.current);
     warningFiredRef.current = false;
     deadlineRef.current = null; // re-anchor from the new duration
+    // Starting a work block straight from idle begins a NEW cycle. Without this
+    // the chip keeps reading "Block 3 of 3" from the previous run, and the
+    // auto-break check below sees the cycle as already finished, so it stops
+    // after one block instead of cycling.
+    if (m === "work" && mode === "idle") {
+      setCurrentBlock(1);
+      currentBlockRef.current = 1;
+    }
     const secs = m === "attention" ? 0 : m === "work" ? blockMinutesRef.current * 60 : breakMinutesRef.current * 60;
     totalDurationRef.current = secs;
     if (m === "recharge") setCurrentRecharge(randomRecharge());
@@ -1143,6 +1245,28 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
     setCorporateMode("work");
     setSecondsLeft(secs);
     setRunning(true);
+  }
+
+  // See ClassroomApp — warn before discarding a running block, then allow it.
+  function guardInterrupt(next: CorporateMode): boolean {
+    if (!running || secondsLeft <= 0) return false;
+    setPendingMode(next);
+    return true;
+  }
+  function requestCorporateMode(m: CorporateMode) {
+    if (guardInterrupt(m)) return;
+    activateCorporateMode(m);
+  }
+  function requestCalm() {
+    if (guardInterrupt("attention")) return;
+    handleCalmClick();
+  }
+  function confirmPending() {
+    const m = pendingMode;
+    setPendingMode(null);
+    if (!m) return;
+    if (m === "attention") handleCalmClick();
+    else activateCorporateMode(m);
   }
 
   // Pausing drops the anchor; resuming re-anchors from the frozen secondsLeft.
@@ -1196,6 +1320,15 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
       </RoomTopBar>
 
       {showFeedback && <FeedbackModal profile="corporate" onClose={() => setShowFeedback(false)} />}
+      {pendingMode && (
+        <InterruptDialog
+          remaining={secondsLeft}
+          currentLabel={CORPORATE_MODES[mode].label}
+          nextLabel={CORPORATE_MODES[pendingMode].label}
+          onCancel={() => setPendingMode(null)}
+          onConfirm={confirmPending}
+        />
+      )}
       <EmergencyButton onActivate={handleEmergencyActivate} onDeactivate={handleEmergencyDeactivate} />
 
       {running && <KeyboardHint />}
@@ -1284,9 +1417,9 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
 
       {/* Main Buttons — Focus is the primary action */}
       <div className="flex gap-3 mb-5 flex-wrap justify-center">
-        <button onClick={handleCalmClick} className="px-6 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white text-base font-semibold transition-all shadow-lg shadow-sky-500/25 hover:-translate-y-0.5">🔔 Calm</button>
-        <button onClick={() => activateCorporateMode("work")} className="px-8 py-3.5 rounded-2xl bg-teal-600 hover:bg-teal-500 text-white text-base font-semibold transition-all shadow-lg shadow-teal-500/25 hover:-translate-y-0.5">💼 Focus</button>
-        <button onClick={() => activateCorporateMode("recharge")} className="px-6 py-3.5 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white text-base font-semibold transition-all shadow-lg shadow-amber-500/25 hover:-translate-y-0.5">⚡ Recharge</button>
+        <button onClick={requestCalm} className="px-6 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white text-base font-semibold transition-all shadow-lg shadow-sky-500/25 hover:-translate-y-0.5">🔔 Calm</button>
+        <button onClick={() => requestCorporateMode("work")} className="px-8 py-3.5 rounded-2xl bg-teal-600 hover:bg-teal-500 text-white text-base font-semibold transition-all shadow-lg shadow-teal-500/25 hover:-translate-y-0.5">💼 Focus</button>
+        <button onClick={() => requestCorporateMode("recharge")} className="px-6 py-3.5 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white text-base font-semibold transition-all shadow-lg shadow-amber-500/25 hover:-translate-y-0.5">⚡ Recharge</button>
       </div>
 
       {mode !== "idle" && !showCalmCD && (
