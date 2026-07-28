@@ -63,6 +63,23 @@ F. **Mic error states.** If you can, test with the mic disabled in system
    settings — you should get "No microphone was found," not the "blocked, allow
    it in the address bar" message.
 
+## Browser pass — interrupt guard and the rest (commit `552c535`)
+
+G. **Break mid-Focus warns first.** Start a Focus block, let it run a minute,
+   click 🌿 Break. You should get "End Focus Time early?" showing the remaining
+   time. "Keep running" leaves the block untouched; "Start Brain Break" proceeds.
+   Same for Calm and for re-clicking Focus. Same again in Corporate.
+H. **No warning when there's nothing to protect.** From idle, Focus/Break/Calm
+   should start immediately with no dialog. Also check that a block which has
+   run down to 0:00 doesn't warn.
+I. **Corporate block counter.** Run a full 3-block cycle to the end. Then click
+   💼 Focus directly from idle — the chip must read "Block 1 of 3", not "3 of 3",
+   and auto-break should cycle rather than stopping after one block.
+J. **Emergency button during Calm.** Trigger Calm and, while the countdown wash
+   is on screen, confirm the 🚨 button is still visible and clickable.
+K. **Tab title flash.** With a timer running, switch tabs before the 1-minute
+   mark. The tab title should alternate for ~16 seconds, not blink once.
+
 ## Browser pass — Classroom
 
 8. Focus slider bottoms out at **0m** in every grade band.
