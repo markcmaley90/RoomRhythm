@@ -80,6 +80,34 @@ J. **Emergency button during Calm.** Trigger Calm and, while the countdown wash
 K. **Tab title flash.** With a timer running, switch tabs before the 1-minute
    mark. The tab title should alternate for ~16 seconds, not blink once.
 
+## Round 2 — retest after your first pass
+
+**C (retest).** ↑↓ on a running timer must move it by exactly 5 seconds per
+press, and the number must *stay* moved. Before, one press shifted the real end
+time by 10s while the display showed 5, then the next tick snapped it back.
+Still confirm arrows do nothing while typing in "Suggest a Feature".
+
+**E (retest).** The meter now shows an amber arming bar and "chiming in 3s"
+while you're above the line. Watch the bar fill — that tells you it's counting.
+Short dips no longer reset it. Note it's **3 seconds**, not 2, and there's a
+15-second cooldown after each chime. If the bar never moves, your level isn't
+crossing the threshold — drag the threshold slider down until it does.
+**Also check: with the room muted, no chime.** That's intended.
+
+**I (retest).** Corporate should have no "Block X of Y" chip anywhere. With
+auto-break On, Work → Recharge → Work should now cycle indefinitely instead of
+stopping after three.
+
+**L. Ambient focus sound (new).** In the idle settings panel there's a "Focus
+Sound" row. **Soft Rain** is free; Ocean, Warm Pad, and Deep Hum show a 🔒 and
+are unclickable. Pick Soft Rain, start a Focus block:
+  - It should fade in over ~2 seconds, not snap on.
+  - It should stop when the block ends and **not** play during a break.
+  - Muting the room should silence it.
+  - Hit "← Rooms" mid-block — it must stop, not keep playing.
+  - Let it run several minutes and listen for a click or seam at the loop point.
+  Same control exists in Corporate, playing during work blocks.
+
 ## Browser pass — Classroom
 
 8. Focus slider bottoms out at **0m** in every grade band.
