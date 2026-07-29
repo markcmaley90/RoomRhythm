@@ -712,6 +712,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
   // Wall-clock moment the running block ends. null = needs re-anchoring (paused,
   // idle, or the duration just changed). See the timer tick effect.
   const deadlineRef      = useRef<number | null>(null);
+  const secondsLeftRef   = useRef(0);
   const totalDurationRef = useRef<number>(0);
   const warningFiredRef  = useRef(false);
   const modeRef          = useRef(mode);
@@ -721,6 +722,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
 
   useEffect(() => { modeRef.current = mode; }, [mode]);
   useEffect(() => { bandIndexRef.current = bandIndex; }, [bandIndex]);
+  useEffect(() => { secondsLeftRef.current = secondsLeft; }, [secondsLeft]);
   useEffect(() => { customMinutesRef.current = customMinutes; }, [customMinutes]);
 
   const band    = GRADE_BANDS[bandIndex];
@@ -804,12 +806,17 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el?.isContentEditable) return;
       if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
       const delta = e.key === "ArrowUp" ? 5 : -5;
-      setSecondsLeft((s) => {
-        const next = Math.min(Math.max(s + delta, 0), 5999);
-        // Shift the anchor too, or the next tick would immediately undo this.
-        if (deadlineRef.current !== null) deadlineRef.current += (next - s) * 1000;
-        return next;
-      });
+      // Adjust the DEADLINE, outside any state updater. React re-invokes updater
+      // functions (twice in dev under StrictMode), so mutating a ref inside one
+      // applied the shift twice — one keypress moved the real end time by 10s
+      // while the display moved 5. Updaters must be pure; the anchor is the
+      // source of truth while running anyway.
+      const now = Date.now();
+      const dl = deadlineRef.current;
+      const cur = dl !== null ? Math.max(0, Math.ceil((dl - now) / 1000)) : secondsLeftRef.current;
+      const next = Math.min(Math.max(cur + delta, 0), 5999);
+      if (dl !== null) deadlineRef.current = now + next * 1000;
+      setSecondsLeft(next);
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
@@ -1121,6 +1128,7 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
   // Wall-clock moment the running block ends. null = needs re-anchoring (paused,
   // idle, or the duration just changed). See the timer tick effect.
   const deadlineRef      = useRef<number | null>(null);
+  const secondsLeftRef   = useRef(0);
   const totalDurationRef = useRef<number>(0);
   const warningFiredRef  = useRef(false);
   const modeRef          = useRef(mode);
@@ -1133,6 +1141,7 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
   useEffect(() => { blockMinutesRef.current = blockMinutes; }, [blockMinutes]);
   useEffect(() => { breakMinutesRef.current = breakMinutes; }, [breakMinutes]);
   useEffect(() => { currentBlockRef.current = currentBlock; }, [currentBlock]);
+  useEffect(() => { secondsLeftRef.current = secondsLeft; }, [secondsLeft]);
 
   const config  = CORPORATE_MODES[mode];
   const nearEnd = secondsLeft > 0 && secondsLeft <= 60 && running;
@@ -1195,11 +1204,17 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el?.isContentEditable) return;
       if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
       const delta = e.key === "ArrowUp" ? 5 : -5;
-      setSecondsLeft((s) => {
-        const next = Math.min(Math.max(s + delta, 0), 5999);
-        if (deadlineRef.current !== null) deadlineRef.current += (next - s) * 1000;
-        return next;
-      });
+      // Adjust the DEADLINE, outside any state updater. React re-invokes updater
+      // functions (twice in dev under StrictMode), so mutating a ref inside one
+      // applied the shift twice — one keypress moved the real end time by 10s
+      // while the display moved 5. Updaters must be pure; the anchor is the
+      // source of truth while running anyway.
+      const now = Date.now();
+      const dl = deadlineRef.current;
+      const cur = dl !== null ? Math.max(0, Math.ceil((dl - now) / 1000)) : secondsLeftRef.current;
+      const next = Math.min(Math.max(cur + delta, 0), 5999);
+      if (dl !== null) deadlineRef.current = now + next * 1000;
+      setSecondsLeft(next);
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);

@@ -21,6 +21,11 @@ const PRIVACY_LINE =
 
 const SUSTAIN_MS = 3000; // must stay above threshold this long
 const COOLDOWN_MS = 15000; // and no re-trigger within this window
+// A classroom is not a steady tone — it dips between syllables and between
+// speakers. Requiring an unbroken 3s above the line meant the accumulator kept
+// resetting on those gaps and the chime almost never fired in a real room.
+// Brief dips are forgiven; a genuine drop in volume still cancels.
+const DIP_GRACE_MS = 700;
 
 export default function NoiseMeter({ onClose, muted }: { onClose: () => void; muted: boolean }) {
   const [state, setState] = useState<MeterState>("idle");
@@ -35,6 +40,10 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
   const rafRef = useRef<number | null>(null);
   const smoothedRef = useRef(0);
   const aboveSinceRef = useRef<number | null>(null);
+  const dipSinceRef = useRef<number | null>(null);
+  // 0..1 — how far along the sustain window we are. Drives the arming ring, so
+  // a teacher can see the chime charging instead of guessing why it stayed quiet.
+  const [arming, setArming] = useState(0);
   const lastChimeRef = useRef(0);
   const thresholdRef = useRef(threshold);
 
@@ -92,6 +101,7 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
 
     const now = Date.now();
     if (lvl > thresholdRef.current) {
+      dipSinceRef.current = null;
       if (aboveSinceRef.current === null) {
         aboveSinceRef.current = now;
       } else if (now - aboveSinceRef.current >= SUSTAIN_MS && now - lastChimeRef.current >= COOLDOWN_MS) {
@@ -100,9 +110,19 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
         playChimeRef.current();
         setChimedAt(now);
       }
-    } else {
-      aboveSinceRef.current = null;
+    } else if (aboveSinceRef.current !== null) {
+      // Below the line, but we were counting — forgive a short dip.
+      if (dipSinceRef.current === null) dipSinceRef.current = now;
+      else if (now - dipSinceRef.current > DIP_GRACE_MS) {
+        aboveSinceRef.current = null;
+        dipSinceRef.current = null;
+      }
     }
+    setArming(
+      aboveSinceRef.current === null
+        ? 0
+        : Math.min(1, (now - aboveSinceRef.current) / SUSTAIN_MS),
+    );
 
     rafRef.current = requestAnimationFrame(loop);
   }, []);
@@ -234,8 +254,23 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
                 aria-label="Too-loud threshold"
                 className="w-full accent-white"
               />
+              {/* Visible arming state. Without this the meter is silent and
+                  inscrutable — you can't tell whether it's counting, whether
+                  you're over the line, or whether it's in cooldown. */}
+              <div className="flex items-center gap-2">
+                <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-amber-400 transition-[width] duration-100"
+                    style={{ width: `${Math.round(arming * 100)}%` }}
+                  />
+                </div>
+                <span className="w-28 shrink-0 text-right text-[11px] tabular-nums text-white/40">
+                  {arming > 0 ? `chiming in ${Math.ceil(SUSTAIN_MS / 1000 - arming * SUSTAIN_MS / 1000)}s` : "quiet enough"}
+                </span>
+              </div>
               <p className="text-[11px] text-white/35">
                 Sounds once after {SUSTAIN_MS / 1000}s above the line, then waits {COOLDOWN_MS / 1000}s.
+                Brief dips won{"’"}t reset it. Muting the room mutes the chime too.
               </p>
             </div>
 
