@@ -3,9 +3,36 @@
 // Shared Web Audio sound engine for RoomRhythm — the single source of truth used
 // by Classroom, Corporate, and the Testing section runner.
 
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useEffect } from "react";
 
 export type SoundType = "bell" | "chime" | "soft";
+
+/**
+ * Ambient focus beds — continuous background sound for a working room.
+ *
+ * Fully synthesized, like every other sound in RoomRhythm. No MP3s, which means
+ * nothing to host, no licensing, no load time on school wifi, no gap or seam
+ * when a bed loops, and it works with the tab offline. A 45-minute focus block
+ * costs zero bytes of network.
+ *
+ * TIER: `free: true` beds play for everyone. The rest are the Pro anchor per
+ * docs/gtm-strategy.md §4 — surfaced but locked, same as the Testing templates.
+ */
+export type AmbientId = "none" | "rain" | "ocean" | "pad" | "hum";
+
+export const AMBIENT_BEDS: {
+  id: AmbientId; label: string; emoji: string; free: boolean; hint: string;
+}[] = [
+  { id: "none",  label: "Off",        emoji: "🔇", free: true,  hint: "No background sound." },
+  { id: "rain",  label: "Soft Rain",  emoji: "🌧", free: true,  hint: "Steady filtered rainfall. The safe default for most rooms." },
+  { id: "ocean", label: "Ocean",      emoji: "🌊", free: false, hint: "Slow swells that rise and fall." },
+  { id: "pad",   label: "Warm Pad",   emoji: "🎹", free: false, hint: "A quiet sustained chord." },
+  { id: "hum",   label: "Deep Hum",   emoji: "🌌", free: false, hint: "Low room tone that masks corridor noise." },
+];
+
+export function isAmbientFree(id: AmbientId): boolean {
+  return AMBIENT_BEDS.find((b) => b.id === id)?.free === true;
+}
 
 export function useAudioEngine(muted: boolean, soundType: SoundType) {
   const ctxRef = useRef<AudioContext | null>(null);
@@ -134,5 +161,122 @@ export function useAudioEngine(muted: boolean, soundType: SoundType) {
   // later timer-driven sounds are audible under the browser autoplay policy.
   const unlock = useCallback(() => { getCtx(); }, [getCtx]);
 
-  return { unlock, playEnd, playOneMinuteWarning, playAttention, playTick, playBegin, playFinalBeep, preview, startEmergencyAlarm };
+  // ── Ambient bed ─────────────────────────────────────────────────────────
+  // Runs on the SAME AudioContext as everything else. A second context would
+  // drift independently and survive teardown — the bug that made the emergency
+  // alarm unstoppable. One context, one set of nodes, always torn down.
+  const ambientRef = useRef<{ id: AmbientId; stop: () => void } | null>(null);
+
+  /** 2s of looping brown-ish noise. Brown, not white: gentler at high
+   *  frequencies, which is what makes it sit under a room instead of hissing
+   *  over it. */
+  const noiseBuffer = useCallback((c: AudioContext) => {
+    const len = c.sampleRate * 2;
+    const buf = c.createBuffer(1, len, c.sampleRate);
+    const d = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < len; i++) {
+      const white = Math.random() * 2 - 1;
+      last = (last + 0.02 * white) / 1.02;
+      d[i] = last * 3.5;
+    }
+    // Cross-fade the seam so the loop point is inaudible.
+    const fade = Math.floor(c.sampleRate * 0.05);
+    for (let i = 0; i < fade; i++) {
+      const t = i / fade;
+      d[i] = d[i] * t + d[len - fade + i] * (1 - t);
+    }
+    return buf;
+  }, []);
+
+  const stopAmbient = useCallback((fade = 1.2) => {
+    const cur = ambientRef.current;
+    if (!cur) return;
+    ambientRef.current = null;
+    try { cur.stop(); } catch { /* context already gone */ }
+    void fade;
+  }, []);
+
+  /** Start (or switch to) an ambient bed. Idempotent for the same id. */
+  const startAmbient = useCallback((id: AmbientId) => {
+    if (ambientRef.current?.id === id) return;
+    stopAmbient();
+    if (id === "none" || muted) return;
+
+    const c = getCtx();
+    const master = c.createGain();
+    master.gain.setValueAtTime(0, c.currentTime);
+    master.connect(c.destination);
+
+    const nodes: { stop: () => void }[] = [];
+    const target = { rain: 0.075, ocean: 0.085, hum: 0.06, pad: 0.045 }[id] ?? 0.06;
+
+    if (id === "rain" || id === "ocean" || id === "hum") {
+      const src = c.createBufferSource();
+      src.buffer = noiseBuffer(c);
+      src.loop = true;
+      const lp = c.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = id === "hum" ? 220 : id === "ocean" ? 700 : 1400;
+      lp.Q.value = 0.6;
+      src.connect(lp); lp.connect(master);
+      src.start();
+      nodes.push({ stop: () => { try { src.stop(); } catch {} src.disconnect(); lp.disconnect(); } });
+
+      if (id === "ocean") {
+        // Slow swell: an LFO opening and closing the filter, ~11s per breath.
+        const lfo = c.createOscillator();
+        const depth = c.createGain();
+        lfo.frequency.value = 0.09;
+        depth.gain.value = 380;
+        lfo.connect(depth); depth.connect(lp.frequency);
+        lfo.start();
+        nodes.push({ stop: () => { try { lfo.stop(); } catch {} lfo.disconnect(); depth.disconnect(); } });
+      }
+    } else if (id === "pad") {
+      // Quiet sustained chord, slightly detuned so it breathes rather than beats.
+      const lp = c.createBiquadFilter();
+      lp.type = "lowpass"; lp.frequency.value = 900;
+      lp.connect(master);
+      for (const f of [110, 164.81, 220, 329.63]) {
+        for (const cents of [-4, 4]) {
+          const o = c.createOscillator();
+          const g = c.createGain();
+          o.type = "sine";
+          o.frequency.value = f * Math.pow(2, cents / 1200);
+          g.gain.value = 0.25;
+          o.connect(g); g.connect(lp);
+          o.start();
+          nodes.push({ stop: () => { try { o.stop(); } catch {} o.disconnect(); g.disconnect(); } });
+        }
+      }
+      nodes.push({ stop: () => lp.disconnect() });
+    }
+
+    // Fade in — an ambient bed that snaps on is startling in a quiet room.
+    master.gain.linearRampToValueAtTime(target, c.currentTime + 2.5);
+
+    ambientRef.current = {
+      id,
+      stop: () => {
+        const t = c.currentTime;
+        master.gain.cancelScheduledValues(t);
+        master.gain.setValueAtTime(master.gain.value, t);
+        master.gain.linearRampToValueAtTime(0.0001, t + 1.2);
+        setTimeout(() => {
+          nodes.forEach((n) => n.stop());
+          master.disconnect();
+        }, 1400);
+      },
+    };
+  }, [getCtx, muted, noiseBuffer, stopAmbient]);
+
+  // Muting the room must silence the bed too, and unmuting should not resurrect
+  // it behind the teacher's back — the caller re-starts it deliberately.
+  useEffect(() => { if (muted) stopAmbient(); }, [muted, stopAmbient]);
+
+  // Never leave a bed playing after the screen is gone.
+  useEffect(() => () => stopAmbient(0), [stopAmbient]);
+
+  return { unlock, playEnd, playOneMinuteWarning, playAttention, playTick, playBegin, playFinalBeep, preview, startEmergencyAlarm, startAmbient, stopAmbient };
 }

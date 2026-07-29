@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useAudioEngine, type SoundType } from "@/lib/audio";
+import { useAudioEngine, AMBIENT_BEDS, isAmbientFree, type SoundType, type AmbientId } from "@/lib/audio";
 import {
   SHARE_PARAM,
   decodeShareConfig,
@@ -331,6 +331,48 @@ function useFullscreen() {
     else document.documentElement.requestFullscreen().catch(() => {});
   }, []);
   return { isFullscreen, toggleFullscreen };
+}
+
+// ══════════════════════════════════════════════════════════════
+// AMBIENT PICKER — continuous background sound for focus blocks
+// ══════════════════════════════════════════════════════════════
+function AmbientPicker({ value, onChange }: {
+  value: AmbientId; onChange: (a: AmbientId) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <p className="text-xs opacity-60 uppercase tracking-widest">Focus Sound</p>
+        <p className="text-[11px] opacity-40">plays during focus</p>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {AMBIENT_BEDS.map((b) => {
+          const locked = !isAmbientFree(b.id);
+          const active = value === b.id;
+          return (
+            <button
+              key={b.id}
+              onClick={() => !locked && onChange(b.id)}
+              disabled={locked}
+              title={locked ? `${b.label} — Pro, coming soon` : b.hint}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                active
+                  ? "bg-indigo-500/40 border-indigo-400/60 text-indigo-50"
+                  : locked
+                    ? "bg-white/[0.03] border-white/5 text-white/25 cursor-not-allowed"
+                    : "bg-white/10 border-white/10 hover:bg-white/20"
+              }`}
+            >
+              {locked ? "🔒" : b.emoji} {b.label}
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-[11px] opacity-40">
+        More beds arrive with RoomRhythm Pro — coming soon.
+      </p>
+    </div>
+  );
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -691,6 +733,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
   const [secondsLeft, setSecondsLeft]       = useState(0);
   const [running, setRunning]               = useState(false);
   const [pendingMode, setPendingMode]       = useState<ClassroomMode | null>(null);
+  const [ambient, setAmbient]               = useState<AmbientId>("none");
   const [muted, setMuted]                   = useState(false);
   const [soundType, setSoundType]           = useState<SoundType>(shared?.sound ?? "chime");
   const [currentBreak, setCurrentBreak]     = useState(BRAIN_BREAKS[0]);
@@ -729,7 +772,15 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
   const config  = CLASSROOM_MODES[mode];
   const nearEnd = secondsLeft > 0 && secondsLeft <= 60 && running;
 
-  const { playEnd, playOneMinuteWarning, playAttention, playTick, playBegin, playFinalBeep, preview, startEmergencyAlarm } = useAudioEngine(muted, soundType);
+  const { playEnd, playOneMinuteWarning, playAttention, playTick, playBegin, playFinalBeep, preview, startEmergencyAlarm, startAmbient, stopAmbient } = useAudioEngine(muted, soundType);
+
+  // Ambient bed runs during focus blocks only — a break is when the room is
+  // meant to be noisy, and the silence between blocks is itself the cue that
+  // the block ended. Muting the room stops it (also enforced in lib/audio.ts).
+  useEffect(() => {
+    if (mode === "focus" && running && !muted) startAmbient(ambient);
+    else stopAmbient();
+  }, [mode, running, muted, ambient, startAmbient, stopAmbient]);
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const triggerFlash = useCallback(() => setFlashTrigger((n) => n + 1), []);
 
@@ -1059,10 +1110,12 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
                 </button>
               </div>
               <div className="flex items-center gap-2">
-                <span className="opacity-50">Sound</span>
+                <span className="opacity-50">Cue</span>
                 <SoundPicker soundType={soundType} onSoundChange={setSoundType} onPreview={preview} />
               </div>
             </div>
+            <div className="h-px bg-white/10" />
+            <AmbientPicker value={ambient} onChange={setAmbient} />
             <div className="h-px bg-white/10" />
             <div className="flex flex-col items-center gap-1.5">
               <button onClick={copyShareLink}
@@ -1106,13 +1159,12 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
 function CorporateApp({ onBack }: { onBack: () => void }) {
   const [showFeedback, setShowFeedback]   = useState(false);
   const [mode, setCorporateMode]          = useState<CorporateMode>("idle");
-  const [totalBlocks]                     = useState(3);
-  const [currentBlock, setCurrentBlock]   = useState(1);
   const [blockMinutes, setBlockMinutes]   = useState(25);
   const [breakMinutes, setBreakMinutes]   = useState(5);
   const [secondsLeft, setSecondsLeft]     = useState(0);
   const [running, setRunning]             = useState(false);
   const [pendingMode, setPendingMode]     = useState<CorporateMode | null>(null);
+  const [ambient, setAmbient]             = useState<AmbientId>("none");
   const [muted, setMuted]                 = useState(false);
   const [soundType, setSoundType]         = useState<SoundType>("chime");
   const [flashTrigger, setFlashTrigger]   = useState(0);
@@ -1134,19 +1186,23 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
   const modeRef          = useRef(mode);
   const blockMinutesRef  = useRef(blockMinutes);
   const breakMinutesRef  = useRef(breakMinutes);
-  const currentBlockRef  = useRef(currentBlock);
   const stopEmergencyRef = useRef<(() => void) | null>(null);
 
   useEffect(() => { modeRef.current = mode; }, [mode]);
   useEffect(() => { blockMinutesRef.current = blockMinutes; }, [blockMinutes]);
   useEffect(() => { breakMinutesRef.current = breakMinutes; }, [breakMinutes]);
-  useEffect(() => { currentBlockRef.current = currentBlock; }, [currentBlock]);
   useEffect(() => { secondsLeftRef.current = secondsLeft; }, [secondsLeft]);
 
   const config  = CORPORATE_MODES[mode];
   const nearEnd = secondsLeft > 0 && secondsLeft <= 60 && running;
 
-  const { playEnd, playOneMinuteWarning, playAttention, playTick, playBegin, playFinalBeep, preview, startEmergencyAlarm } = useAudioEngine(muted, soundType);
+  const { playEnd, playOneMinuteWarning, playAttention, playTick, playBegin, playFinalBeep, preview, startEmergencyAlarm, startAmbient, stopAmbient } = useAudioEngine(muted, soundType);
+
+  // Same rule as Classroom: the bed runs during work blocks only.
+  useEffect(() => {
+    if (mode === "work" && running && !muted) startAmbient(ambient);
+    else stopAmbient();
+  }, [mode, running, muted, ambient, startAmbient, stopAmbient]);
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const triggerFlash = useCallback(() => setFlashTrigger((n) => n + 1), []);
 
@@ -1177,14 +1233,11 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
       setRunning(false); playEnd(); triggerFlash(); warningFiredRef.current = false;
       const m = modeRef.current;
       if (m === "work") {
-        if (autoBreak) {
-          if (currentBlockRef.current < totalBlocks) activateCorporateMode("recharge");
-          else { setCorporateMode("idle"); document.title = "✅ Session Complete — RoomRhythm"; }
-        } else {
-          setCorporateMode("idle"); document.title = "✅ Focus Complete — RoomRhythm";
-        }
+        // Auto-break alternates Work and Recharge until the facilitator stops
+        // it — same model as Classroom. There is no fixed block count.
+        if (autoBreak) activateCorporateMode("recharge");
+        else { setCorporateMode("idle"); document.title = "✅ Focus Complete — RoomRhythm"; }
       } else if (m === "recharge") {
-        setCurrentBlock((b) => { const next = b + 1; currentBlockRef.current = next; return next; });
         activateCorporateMode("work");
       }
     }
@@ -1224,14 +1277,6 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
     if (intervalRef.current) clearInterval(intervalRef.current);
     warningFiredRef.current = false;
     deadlineRef.current = null; // re-anchor from the new duration
-    // Starting a work block straight from idle begins a NEW cycle. Without this
-    // the chip keeps reading "Block 3 of 3" from the previous run, and the
-    // auto-break check below sees the cycle as already finished, so it stops
-    // after one block instead of cycling.
-    if (m === "work" && mode === "idle") {
-      setCurrentBlock(1);
-      currentBlockRef.current = 1;
-    }
     const secs = m === "attention" ? 0 : m === "work" ? blockMinutesRef.current * 60 : breakMinutesRef.current * 60;
     totalDurationRef.current = secs;
     if (m === "recharge") setCurrentRecharge(randomRecharge());
@@ -1255,7 +1300,6 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
     totalDurationRef.current = secs;
     if (intervalRef.current) clearInterval(intervalRef.current);
     warningFiredRef.current = false;
-    setCurrentBlock(1); currentBlockRef.current = 1;
     deadlineRef.current = null;
     setCorporateMode("work");
     setSecondsLeft(secs);
@@ -1294,7 +1338,7 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
     if (intervalRef.current) clearInterval(intervalRef.current);
     warningFiredRef.current = false;
     deadlineRef.current = null;
-    setRunning(false); setCorporateMode("idle"); setSecondsLeft(0); setCurrentBlock(1);
+    setRunning(false); setCorporateMode("idle"); setSecondsLeft(0);
     setShowCalmCD(false); setShowFocusCD(false);
     document.title = "RoomRhythm";
   }
@@ -1353,12 +1397,6 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
       </h1>
       <p className="text-base opacity-60 mb-6">{config.sub}</p>
 
-      {/* Session phase chip */}
-      {(mode === "work" || mode === "recharge") && (
-        <div className="mb-4 px-3 py-1 rounded-full bg-teal-500/15 text-teal-200 text-xs font-semibold uppercase tracking-widest">
-          Block {currentBlock} of {totalBlocks}
-        </div>
-      )}
 
       {secondsLeft > 0 && (
         <div className="relative flex items-center justify-center mb-8">
@@ -1422,10 +1460,12 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
                 </button>
               </div>
               <div className="flex items-center gap-2">
-                <span className="opacity-50">Sound</span>
+                <span className="opacity-50">Cue</span>
                 <SoundPicker soundType={soundType} onSoundChange={setSoundType} onPreview={preview} />
               </div>
             </div>
+            <div className="h-px bg-white/10" />
+            <AmbientPicker value={ambient} onChange={setAmbient} />
           </div>
         </div>
       )}
