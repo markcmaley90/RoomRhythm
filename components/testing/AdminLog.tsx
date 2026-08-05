@@ -18,11 +18,17 @@ export type AdminEvent = {
 export default function AdminLog({
   events,
   onAddNote,
+  templateName = "administration",
 }: {
   events: AdminEvent[];
   onAddNote: (initials: string, seat: string, note: string) => void;
+  /** Used only to name the exported file. */
+  templateName?: string;
 }) {
-  const [open, setOpen] = useState(false);
+  // Open by default: a proctor arrives at this screen to WATCH the log, not to
+  // discover it. Collapsed-by-default hid the whole feature behind a click on
+  // the one screen where it matters.
+  const [open, setOpen] = useState(true);
   const [initials, setInitials] = useState("");
   const [seat, setSeat] = useState("");
   const [note, setNote] = useState("");
@@ -36,17 +42,57 @@ export default function AdminLog({
     setNote("");
   }
 
+  /**
+   * Export the log as CSV, entirely in the browser.
+   *
+   * Nothing is uploaded — the file is built from in-memory events and handed to
+   * the browser's download. This matters for the compliance story: the log
+   * still never touches a server, and the proctor keeps the only copy.
+   *
+   * The session is lost on reload (no persistence by design), so without this a
+   * proctor who needs an administration record has to photograph the screen.
+   */
+  function downloadCsv() {
+    const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const rows = [
+      ["Time", "Type", "Entry"],
+      ...events.map((e) => [e.atLabel, e.kind, e.message]),
+    ];
+    const csv = rows.map((r) => r.map(esc).join(",")).join("\r\n");
+
+    const stamp = new Date().toISOString().slice(0, 16).replace("T", "_").replace(":", "");
+    const slug = templateName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    // BOM so Excel opens UTF-8 correctly — proctors live in Excel.
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `roomrhythm-log_${slug}_${stamp}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-neutral-900/70">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-white/80 hover:text-white"
-      >
-        <span>
-          Administration log <span className="text-white/40">· {events.length}</span>
-        </span>
-        <span className="text-white/40">{open ? "▲" : "▼"}</span>
-      </button>
+      <div className="flex w-full items-center gap-2 px-4 py-3">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="flex flex-1 items-center justify-between text-left text-sm font-medium text-white/80 hover:text-white"
+        >
+          <span>
+            Administration log <span className="text-white/40">· {events.length}</span>
+          </span>
+          <span className="text-white/40">{open ? "▲" : "▼"}</span>
+        </button>
+        <button
+          onClick={downloadCsv}
+          disabled={events.length === 0}
+          title="Download this log as a CSV file"
+          className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition-colors hover:bg-white/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+        >
+          ↓ CSV
+        </button>
+      </div>
 
       {open && (
         <div className="flex flex-col gap-4 px-4 pb-4">

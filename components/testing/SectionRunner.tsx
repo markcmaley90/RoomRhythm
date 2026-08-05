@@ -566,6 +566,7 @@ export default function SectionRunner({ template }: { template: TestTemplate }) 
         {phase !== "setup" && (
           <AdminLog
             events={events}
+            templateName={template.name}
             onAddNote={(initials, seat, note) =>
               log("note", `${initials}${seat ? ` · seat ${seat}` : ""}${note ? ` — ${note}` : ""}`)
             }

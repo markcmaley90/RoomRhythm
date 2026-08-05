@@ -41,3 +41,5 @@ CLAUDE.local.md
 # python renderer caches
 __pycache__/
 *.pyc
+
+.vercel
