@@ -463,6 +463,17 @@ function ProjectorView({ secondsLeft, label, emoji, nearEnd, totalDuration, onEx
 }) {
   const r = 150, circ = 2 * Math.PI * r;
   const progress = totalDuration > 0 ? (totalDuration - secondsLeft) / totalDuration : 0;
+
+  // Escape leaves projector mode. Browsers already train everyone that Esc exits
+  // a full-screen surface, and the only other way out was a small ✕ in the
+  // corner that a teacher at the back of the room can't reach.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onExit();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onExit]);
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center z-50 bg-gray-950">
       <button onClick={onExit} className="absolute top-6 right-6 text-white/30 hover:text-white/70 text-sm">✕ Exit Projector</button>
@@ -529,6 +540,11 @@ const CTRL_BTN =
 
 // Slim top bar: "← Rooms" + accent-tinted profile identity on the left,
 // room-specific controls (passed as children) on the right.
+/** Time-adjust pill, used either side of the running clock. */
+const ADJ_BTN =
+  "px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 " +
+  "text-sm font-semibold tabular-nums transition-all min-w-[3.25rem]";
+
 function RoomTopBar({ emoji, name, accentBg, onBack, children }: {
   emoji: string; name: string; accentBg: string; onBack: () => void; children: React.ReactNode;
 }) {
@@ -928,6 +944,21 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
     else activateMode(m);
   }
 
+
+  /**
+   * Add or remove time on a running block. Shifts the DEADLINE (the source of
+   * truth) rather than the displayed number, and does it outside any state
+   * updater — React re-invokes updaters, which would double the adjustment.
+   */
+  function adjustSeconds(delta: number) {
+    const now = Date.now();
+    const dl = deadlineRef.current;
+    const cur = dl !== null ? Math.max(0, Math.ceil((dl - now) / 1000)) : secondsLeftRef.current;
+    const next = Math.min(Math.max(cur + delta, 0), 6 * 60 * 60);
+    if (dl !== null) deadlineRef.current = now + next * 1000;
+    setSecondsLeft(next);
+  }
+
   // Pausing must drop the anchor: secondsLeft is frozen and correct, but the old
   // deadline is now in the past, so resuming without re-anchoring would snap the
   // clock straight to 0:00.
@@ -993,7 +1024,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
   if (projector) return <ProjectorView secondsLeft={secondsLeft} label={config.label} emoji={config.emoji} nearEnd={nearEnd} totalDuration={totalDurationRef.current} accent="#818cf8" onExit={() => setProjector(false)} />;
 
   return (
-    <div className={`min-h-screen ${config.bg} ${config.text} flex flex-col items-center justify-center transition-colors duration-700 p-6 pb-28 relative ${emergencyActive ? "ring-8 ring-inset ring-red-500/60" : ""}`}
+    <div className={`min-h-screen ${config.bg} ${config.text} flex flex-col items-center justify-center transition-colors duration-700 p-6 pt-24 pb-28 relative ${emergencyActive ? "ring-8 ring-inset ring-red-500/60" : ""}`}
       style={{ backgroundImage: "radial-gradient(ellipse 70% 55% at 50% 34%, rgba(129,140,248,0.14), transparent 72%)" }}>
 
       {/* Calm countdown: amber → indigo */}
@@ -1009,7 +1040,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
       <RoomTopBar emoji="🏫" name="Classroom" accentBg="bg-indigo-500/15" onBack={onBack}>
         <button onClick={() => setShowNames(true)} className={CTRL_BTN}>🎲 Names</button>
         <button onClick={() => setShowNoise(true)} className={CTRL_BTN}>🔊 Noise</button>
-        <button onClick={() => setShowFeedback(true)} className={CTRL_BTN}>💡 Suggest</button>
+        <button onClick={() => setShowFeedback(true)} className={CTRL_BTN}>💡 Suggest a Feature</button>
         <button onClick={toggleFullscreen} className={CTRL_BTN}>{isFullscreen ? "⊠ Exit Full" : "⛶ Fullscreen"}</button>
         <button onClick={() => setProjector(true)} className={CTRL_BTN}>📽 Projector</button>
         <button onClick={() => setMuted((m) => !m)}
@@ -1040,9 +1071,22 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
       </h1>
       <p className="text-base opacity-60 mb-8">{config.sub}</p>
 
-      {/* Timer Ring — hero */}
+      {/* Timer Ring — hero, flanked by time adjustment.
+          "Two more minutes" is the most frequent thing said to a classroom
+          timer, so the controls sit either side of the clock where a teacher
+          looks, not buried at the bottom of the screen. Minus on the left,
+          plus on the right, matching how the numbers move. */}
       {secondsLeft > 0 && (
-        <div className="relative flex items-center justify-center mb-8">
+        <div className="flex items-center justify-center gap-4 sm:gap-8 mb-8">
+          {running && (
+            <div className="flex flex-col gap-2">
+              <button onClick={() => adjustSeconds(-60)} title="Remove one minute"
+                className={ADJ_BTN}>−1m</button>
+              <button onClick={() => adjustSeconds(-300)} title="Remove five minutes"
+                className={ADJ_BTN}>−5m</button>
+            </div>
+          )}
+        <div className="relative flex items-center justify-center">
           <svg width="240" height="240" className="absolute">
             <circle cx="120" cy="120" r="108" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
             <circle cx="120" cy="120" r="108" fill="none"
@@ -1055,6 +1099,17 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
           <div className={`text-7xl font-mono font-bold tabular-nums transition-all duration-300 ${nearEnd ? "text-red-300 animate-pulse" : ""}`}>
             {formatTime(secondsLeft)}
           </div>
+        </div>
+          {running && (
+            <div className="flex flex-col gap-2">
+              <button onClick={() => adjustSeconds(60)} title="Add one minute"
+                className={ADJ_BTN}>+1m</button>
+              <button onClick={() => adjustSeconds(120)} title="Add two minutes"
+                className={ADJ_BTN}>+2m</button>
+              <button onClick={() => adjustSeconds(300)} title="Add five minutes"
+                className={ADJ_BTN}>+5m</button>
+            </div>
+          )}
         </div>
       )}
 
@@ -1328,6 +1383,21 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
     else activateCorporateMode(m);
   }
 
+
+  /**
+   * Add or remove time on a running block. Shifts the DEADLINE (the source of
+   * truth) rather than the displayed number, and does it outside any state
+   * updater — React re-invokes updaters, which would double the adjustment.
+   */
+  function adjustSeconds(delta: number) {
+    const now = Date.now();
+    const dl = deadlineRef.current;
+    const cur = dl !== null ? Math.max(0, Math.ceil((dl - now) / 1000)) : secondsLeftRef.current;
+    const next = Math.min(Math.max(cur + delta, 0), 6 * 60 * 60);
+    if (dl !== null) deadlineRef.current = now + next * 1000;
+    setSecondsLeft(next);
+  }
+
   // Pausing drops the anchor; resuming re-anchors from the frozen secondsLeft.
   function togglePause() {
     deadlineRef.current = null;
@@ -1355,7 +1425,7 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
   if (projector) return <ProjectorView secondsLeft={secondsLeft} label={config.label} emoji={config.emoji} nearEnd={nearEnd} totalDuration={totalDurationRef.current} accent="#2dd4bf" onExit={() => setProjector(false)} />;
 
   return (
-    <div className={`min-h-screen ${config.bg} ${config.text} flex flex-col items-center justify-center transition-colors duration-700 p-6 pb-28 relative ${emergencyActive ? "ring-8 ring-inset ring-red-500/60" : ""}`}
+    <div className={`min-h-screen ${config.bg} ${config.text} flex flex-col items-center justify-center transition-colors duration-700 p-6 pt-24 pb-28 relative ${emergencyActive ? "ring-8 ring-inset ring-red-500/60" : ""}`}
       style={{ backgroundImage: "radial-gradient(ellipse 68% 52% at 50% 34%, rgba(45,212,191,0.12), transparent 72%)" }}>
 
       {/* Calm countdown: amber → indigo */}
@@ -1369,7 +1439,7 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
       <ScreenFlash trigger={flashTrigger} />
 
       <RoomTopBar emoji="🏢" name="Corporate" accentBg="bg-teal-500/15" onBack={onBack}>
-        <button onClick={() => setShowFeedback(true)} className={CTRL_BTN}>💡 Suggest</button>
+        <button onClick={() => setShowFeedback(true)} className={CTRL_BTN}>💡 Suggest a Feature</button>
         <button onClick={toggleFullscreen} className={CTRL_BTN}>{isFullscreen ? "⊠ Exit Full" : "⛶ Fullscreen"}</button>
         <button onClick={() => setProjector(true)} className={CTRL_BTN}>📽 Projector</button>
         <button onClick={() => setMuted((m) => !m)}
@@ -1399,7 +1469,14 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
 
 
       {secondsLeft > 0 && (
-        <div className="relative flex items-center justify-center mb-8">
+        <div className="flex items-center justify-center gap-4 sm:gap-8 mb-8">
+          {running && (
+            <div className="flex flex-col gap-2">
+              <button onClick={() => adjustSeconds(-60)} className={ADJ_BTN}>−1m</button>
+              <button onClick={() => adjustSeconds(-300)} className={ADJ_BTN}>−5m</button>
+            </div>
+          )}
+        <div className="relative flex items-center justify-center">
           <svg width="240" height="240" className="absolute">
             <circle cx="120" cy="120" r="108" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
             <circle cx="120" cy="120" r="108" fill="none"
@@ -1412,6 +1489,14 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
           <div className={`text-7xl font-mono font-bold tabular-nums transition-all duration-300 ${nearEnd ? "text-red-300 animate-pulse" : ""}`}>
             {formatTime(secondsLeft)}
           </div>
+        </div>
+          {running && (
+            <div className="flex flex-col gap-2">
+              <button onClick={() => adjustSeconds(60)} className={ADJ_BTN}>+1m</button>
+              <button onClick={() => adjustSeconds(120)} className={ADJ_BTN}>+2m</button>
+              <button onClick={() => adjustSeconds(300)} className={ADJ_BTN}>+5m</button>
+            </div>
+          )}
         </div>
       )}
 
