@@ -13,6 +13,11 @@
     how often the need occurs in a real period. Agenda mode is the big one.
 11. `11_phone_remote.md` — the teacher's-phone remote, separated from `07`
     student sync (different feature, much smaller, should not wait behind it).
+12. `12_build_plan.md` — **the current roadmap.** Manual vs Schedule mode,
+    phased order, sizes, and what Schedule mode must never become.
+
+`07_multidevice_sync.md` is **DEFERRED indefinitely** — spec only, not scheduled.
+See `12` §7.
 
 ## Status legend
 **BUILT** = shipped. **NEXT** = current cycle. **LATER** = v2/v3.

@@ -29,10 +29,24 @@ RoomRhythm is a **room clock** for school-created exams, **mock/practice** admis
 @docs/09_trademark_and_disclaimers.md
 
 ## Current build cycle
-1. Migrate `page.tsx` -> modular (order in docs/01).
-2. Test template engine: `lib/testing/schema.ts` -> runner -> warning banners -> admin log.
-3. Template editor + JSON import/export.
-4. Backend: Supabase auth + Stripe billing + persistent exportable admin log.
+All P0 and pre-launch P1 items are shipped. **Full plan: `docs/12_build_plan.md`.**
+
+0. **LAUNCH** — domain, deploy, screenshots, demo GIF. Nothing below may delay it.
+1. Quick wins: visible ±1m buttons; period-end-time ("class ends at 10:42") awareness.
+2. Extract `Segment`/`TimeWarning`/`AdvanceMode` from `lib/testing/schema.ts` into
+   `lib/schedule/segment.ts`. Refactor only — zero user-visible change, Testing parity verified.
+3. **Schedule mode** (Classroom): pre-built lesson cadence over that shared core, with presets.
+   Manual mode (today's Calm/Focus/Break) stays the untouched default.
+4. Schedule builder. **Schedules encode into the URL** like share links — bookmarkable
+   and shareable, so NO new `localStorage` carve-out is needed.
+5. Transition instructions + non-destructive attention signal.
+6. Backend: Supabase auth + Stripe billing + persistent exportable admin log.
+7. **Phone remote** (`docs/11_phone_remote.md`) — teacher's phone controls the projector.
+   Projector owns the clock; the phone sends intents only and the room never depends on it.
+
+**Student multi-device sync (`docs/07`) is DEFERRED indefinitely** — spec only, not scheduled.
+35 untrusted devices and a compliance surface involving minors, for value the phone remote
+mostly delivers already.
 
 ## Business model
 Free = full Classroom + Corporate + ONE free Testing template (Classroom Final Exam / `seed-final-90`, other templates visible but locked). Paid = full Testing + ambient sound library + phone-remote (multi-device) sync. **Annual-only, no monthly SKUs:** **$19.99/yr Educator/Work Pro** (school/work email; launch verification = domain check rejecting major consumer providers), **$59.99/yr standard Pro** (no email requirement), **Business tier TBD** (~$149–199/yr; tutoring/test-prep centers + training companies), **$10/mo site license reserved** (school/org, **credit-forward**: individual subs on the domain fold in automatically on activation, unused time credited/refunded). Gate scale + premium daily-use features; never cripple the free core. Domain-signal flywheel: the paid educator tier captures verified school/work domains → site-license leads. Full detail: `docs/gtm-strategy.md` §4. Supersedes the old $36 save-to-Pro model.

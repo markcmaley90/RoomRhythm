@@ -1,5 +1,13 @@
 # 07 — Multi-Device Sync (teacher controls, students view-only)
 
+> **STATUS: DEFERRED INDEFINITELY — spec only, not scheduled.**
+> Decided July 2026. This is 35 untrusted client devices, a compliance surface
+> involving minors, and a failure mode where a whole class watches a frozen
+> clock. The **phone remote** (`11_phone_remote.md`) delivers most of the real
+> value — the teacher not being chained to the laptop — for a fraction of the
+> risk, and is scheduled instead. Revisit only if teachers ask for this after
+> launch, and then Part A (read-only view) only. See `12_build_plan.md` §7.
+
 ## Goal
 Teacher's device controls the room clock; student devices join and mirror it. Room code + QR to join. Teacher dashboard shows who's connected / on-tab.
 
