@@ -9,6 +9,10 @@
 7. `07_multidevice_sync.md`
 8. `08_test_template_engine.md` — the moat. Schema, scope boundary, build order.
 9. `09_trademark_and_disclaimers.md` — HARD rules on SAT®/ACT®/AP®.
+10. `10_classroom_feature_backlog.md` — teacher's-eye feature backlog, ordered by
+    how often the need occurs in a real period. Agenda mode is the big one.
+11. `11_phone_remote.md` — the teacher's-phone remote, separated from `07`
+    student sync (different feature, much smaller, should not wait behind it).
 
 ## Status legend
 **BUILT** = shipped. **NEXT** = current cycle. **LATER** = v2/v3.
