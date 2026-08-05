@@ -7,7 +7,11 @@ mockups read as the real product rather than generic stock design.
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import math, os
 
-F = "/tmp/fonts/ttf"
+# Fonts are vendored next to this file (316KB total) rather than fetched.
+# Geist is free and open-source, and a re-render must not depend on npm, a
+# network, or a conversion step — the one time it did, a machine restart made
+# every asset unbuildable right when the domain changed.
+F = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
 SANS = {w: f"{F}/geist-sans-latin-{w}-normal.ttf" for w in (400, 600, 700, 800)}
 MONO = {w: f"{F}/geist-mono-latin-{w}-normal.ttf" for w in (400, 500, 700)}
 

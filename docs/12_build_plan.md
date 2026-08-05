@@ -88,7 +88,7 @@ A Classroom-flavoured runner over the extracted core.
 
 **Storage question — answered:** schedules are **encoded in the URL**, exactly
 like today's share links (`lib/share.ts`). A teacher bookmarks
-`roomrhythm.com/?s=…` as "Period 3" and it opens ready to run.
+`roomrhythm.org/?s=…` as "Period 3" and it opens ready to run.
 
 This is deliberate and it is better than saving locally:
 - No new `localStorage` carve-out, so CLAUDE.md's hard rule stands unamended.

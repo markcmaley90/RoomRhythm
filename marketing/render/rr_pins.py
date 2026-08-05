@@ -9,7 +9,7 @@ from PIL import ImageDraw
 
 OUT = "/sessions/funny-sweet-dijkstra/mnt/RoomRhythm/marketing/pinterest"
 W, H = 1000, 1500
-URL = "roomrhythm.com"
+URL = "roomrhythm.org"
 FOOTER_TOP = 1330          # nothing may be drawn below this
 
 def shell(accent=INDIGO400, gy=430):

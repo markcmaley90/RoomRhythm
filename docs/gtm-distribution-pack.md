@@ -162,13 +162,13 @@ Any of these can replace `public/og-image.png`. You may want to A/B them by swap
 
 ### `marketing/print/` — 8.5×11
 
-- `flyer-staff-room.pdf` (and `.png`) — **QR code verified to decode to `https://roomrhythm.com`.** Light background on purpose: school printers, toner cost, and a full-bleed black flyer looks wrong on a corkboard. Has tear-off tabs.
+- `flyer-staff-room.pdf` (and `.png`) — **QR code verified to decode to `https://roomrhythm.org`.** Light background on purpose: school printers, toner cost, and a full-bleed black flyer looks wrong on a corkboard. Has tear-off tabs.
 
 Print a dozen, put them in copy rooms and staff lounges during the first week of in-service. It's an unglamorous channel that costs nothing and reaches exactly the people you want, in a building where they're already talking about the coming year.
 
 ### Re-rendering
 
-`marketing/render/` holds the generating scripts (`rr_brand.py`, `rr_pins.py`, `rr_social.py`). **If the domain changes from `roomrhythm.com`, edit the `URL` constant at the top of `rr_pins.py` and `rr_social.py` and re-run** — otherwise every asset ships the wrong URL. Requires Python with Pillow, qrcode, and the Geist font files.
+`marketing/render/` holds the generating scripts (`rr_brand.py`, `rr_pins.py`, `rr_social.py`). **If the domain changes from `roomrhythm.org`, edit the `URL` constant at the top of `rr_pins.py` and `rr_social.py` and re-run** — otherwise every asset ships the wrong URL. Fonts are vendored in `marketing/render/fonts/` so a re-render never depends on a network. Requires Python with Pillow and qrcode.
 
 ---
 

@@ -34,7 +34,7 @@ sounds, a random name picker, and a noise meter, all sized for your projector.
 It also runs test day: final exam timing with extended-time accommodations
 (1.5× and 2×) side by side on one screen. No login, no ads, nothing to install,
 and nothing about your students is ever uploaded. Built by a solo developer for
-real classrooms. roomrhythm.com
+real classrooms. roomrhythm.org
 ```
 
 Claim your website in Pinterest settings once the domain is live. Claimed sites
@@ -71,7 +71,7 @@ extended time 1.5×/2× side by side.
 
 ```
 Free classroom screen for your projector. Focus blocks, breaks,
-name picker, noise meter — and it runs test day. No login. roomrhythm.com
+name picker, noise meter — and it runs test day. No login. roomrhythm.org
 ```
 
 ### Your Reddit / Facebook personal framing

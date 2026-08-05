@@ -3,7 +3,7 @@ from rr_brand import *
 from PIL import ImageDraw
 
 ROOT = "/sessions/funny-sweet-dijkstra/mnt/RoomRhythm/marketing"
-URL = "roomrhythm.com"
+URL = "roomrhythm.org"
 
 def hl(img, ls, y, size, w=800, fill=INK, lh=1.10, color2=None, W=None):
     d = ImageDraw.Draw(img)
