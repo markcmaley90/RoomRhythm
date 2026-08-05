@@ -8,14 +8,30 @@ import { useRef, useCallback, useEffect } from "react";
 export type SoundType = "bell" | "chime" | "soft";
 
 /**
- * Ambient focus beds — continuous background sound for a working room.
+ * SOUND COVER — steady background sound that masks room distractions.
  *
- * Fully synthesized, like every other sound in RoomRhythm. No MP3s, which means
- * nothing to host, no licensing, no load time on school wifi, no gap or seam
- * when a bed loops, and it works with the tab offline. A 45-minute focus block
- * costs zero bytes of network.
+ * NOT "focus music", and the naming matters. The evidence is consistent that
+ * background music HURTS reading and verbal work: the irrelevant sound effect
+ * means task-irrelevant sound disrupts comprehension and recall even when you
+ * try to ignore it, and lyrics are worst because they compete directly with
+ * language processing. The Mozart effect turned out to be an arousal-and-mood
+ * effect — it vanished when those were held constant — and it only ever applied
+ * to spatial tasks, not reading.
  *
- * TIER: `free: true` beds play for everyone. The rest are the Pro anchor per
+ * What DOES hold up is masking: steady broadband sound covers the unpredictable
+ * noises that actually break concentration (the corridor, the class next door,
+ * chairs, HVAC). Boring is the feature. Anything interesting enough to notice is
+ * pulling attention by definition.
+ *
+ * So these are deliberately dull, and the UI must never claim they aid focus —
+ * only that they cover noise. `pad` is kept for teachers who want something
+ * musical, but it is the weakest option here, not the flagship.
+ *
+ * Fully synthesized: no MP3s to host or license, no load time on school wifi, no
+ * seam when the loop repeats, and it works offline. A 45-minute block costs zero
+ * bytes of network.
+ *
+ * TIER: `free: true` plays for everyone; the rest are the Pro anchor per
  * docs/gtm-strategy.md §4 — surfaced but locked, same as the Testing templates.
  */
 export type AmbientId = "none" | "rain" | "ocean" | "pad" | "hum";
@@ -23,11 +39,11 @@ export type AmbientId = "none" | "rain" | "ocean" | "pad" | "hum";
 export const AMBIENT_BEDS: {
   id: AmbientId; label: string; emoji: string; free: boolean; hint: string;
 }[] = [
-  { id: "none",  label: "Off",        emoji: "🔇", free: true,  hint: "No background sound." },
-  { id: "rain",  label: "Soft Rain",  emoji: "🌧", free: true,  hint: "Steady filtered rainfall. The safe default for most rooms." },
-  { id: "ocean", label: "Ocean",      emoji: "🌊", free: false, hint: "Slow swells that rise and fall." },
-  { id: "pad",   label: "Warm Pad",   emoji: "🎹", free: false, hint: "A quiet sustained chord." },
-  { id: "hum",   label: "Deep Hum",   emoji: "🌌", free: false, hint: "Low room tone that masks corridor noise." },
+  { id: "none",  label: "Off",        emoji: "🔇", free: true,  hint: "Silence. Best for most reading and writing." },
+  { id: "rain",  label: "Rainfall",   emoji: "🌧", free: true,  hint: "Steady rain. The best all-round cover — even, and easy to stop hearing." },
+  { id: "ocean", label: "Ocean",      emoji: "🌊", free: false, hint: "Slow swells. Gentler than rain, slightly more noticeable." },
+  { id: "hum",   label: "Room Tone",  emoji: "🌌", free: false, hint: "Low hum. Best for covering corridor noise and HVAC rumble." },
+  { id: "pad",   label: "Soft Chord", emoji: "🎹", free: false, hint: "The one musical option. Pleasant, but music competes with reading — use sparingly." },
 ];
 
 export function isAmbientFree(id: AmbientId): boolean {

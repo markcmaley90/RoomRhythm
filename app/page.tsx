@@ -334,16 +334,20 @@ function useFullscreen() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// AMBIENT PICKER — continuous background sound for focus blocks
+// SOUND COVER — steady sound that masks room distractions.
+// Deliberately NOT 'focus music': background music measurably hurts reading
+// and verbal work, and the Mozart effect turned out to be arousal-and-mood,
+// not neurology. Masking is what holds up. Copy promises noise cover only —
+// a claim that survives a skeptical teacher. Reasoning in lib/audio.ts.
 // ══════════════════════════════════════════════════════════════
-function AmbientPicker({ value, onChange }: {
+function SoundCover({ value, onChange }: {
   value: AmbientId; onChange: (a: AmbientId) => void;
 }) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <p className="text-xs opacity-60 uppercase tracking-widest">Focus Sound</p>
-        <p className="text-[11px] opacity-40">plays during focus</p>
+        <p className="text-xs opacity-60 uppercase tracking-widest">Sound Cover</p>
+        <p className="text-[11px] opacity-40">masks hallway noise</p>
       </div>
       <div className="flex flex-wrap gap-1.5">
         {AMBIENT_BEDS.map((b) => {
@@ -368,8 +372,9 @@ function AmbientPicker({ value, onChange }: {
           );
         })}
       </div>
-      <p className="text-[11px] opacity-40">
-        More beds arrive with RoomRhythm Pro — coming soon.
+      <p className="text-[11px] leading-snug opacity-40">
+        Steady on purpose — anything interesting pulls attention. More options
+        with RoomRhythm Pro, coming soon.
       </p>
     </div>
   );
@@ -1113,6 +1118,14 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
         </div>
       )}
 
+      {/* Sound Cover lives on the running screen, not in setup: a teacher reaches
+          for it when the corridor gets loud mid-block, not before starting. */}
+      {mode === "focus" && (
+        <div className="mb-6 flex w-full max-w-md justify-center">
+          <SoundCover value={ambient} onChange={setAmbient} />
+        </div>
+      )}
+
       {/* Brain Break */}
       {mode === "break" && (
         <div className="mb-8 px-6 py-4 bg-slate-900/70 border border-white/10 rounded-2xl text-center max-w-sm">
@@ -1169,8 +1182,6 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
                 <SoundPicker soundType={soundType} onSoundChange={setSoundType} onPreview={preview} />
               </div>
             </div>
-            <div className="h-px bg-white/10" />
-            <AmbientPicker value={ambient} onChange={setAmbient} />
             <div className="h-px bg-white/10" />
             <div className="flex flex-col items-center gap-1.5">
               <button onClick={copyShareLink}
@@ -1500,6 +1511,12 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
         </div>
       )}
 
+      {mode === "work" && (
+        <div className="mb-6 flex w-full max-w-md justify-center">
+          <SoundCover value={ambient} onChange={setAmbient} />
+        </div>
+      )}
+
       {/* Recharge prompt */}
       {mode === "recharge" && (
         <div className="mb-8 px-6 py-4 bg-slate-900/70 border border-white/10 rounded-2xl text-center max-w-sm">
@@ -1549,8 +1566,6 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
                 <SoundPicker soundType={soundType} onSoundChange={setSoundType} onPreview={preview} />
               </div>
             </div>
-            <div className="h-px bg-white/10" />
-            <AmbientPicker value={ambient} onChange={setAmbient} />
           </div>
         </div>
       )}
