@@ -127,6 +127,20 @@ Supabase project, auth, Stripe. Needed for the paid tier regardless of the
 remote. First point at which RoomRhythm stops being purely client-side, so treat
 it as its own project with its own verification pass.
 
+**Hosting cost changes here.** Vercel's Hobby plan prohibits commercial use —
+their terms define it as any deployment used for financial gain, and turning on
+Stripe crosses that line. Phase 6 therefore carries a **$20/month Vercel Pro**
+cost. At $19.99/yr for the educator tier that's roughly **12 subscribers to cover
+hosting** — worth holding in mind when pricing decisions come up.
+
+Until then, the free tier is genuinely free: no payments, no ads, Pro shown as
+"coming soon". That is within Hobby's intent and is where launch happens.
+
+**Keep the Vercel project on a personal account, not an organisation's team.**
+Domain, deployments, and billing should sit somewhere unambiguously owned by the
+founder. Untangling that after real teachers are using it is far worse than
+getting it right now.
+
 ### Phase 7 — Phone remote (see `11_phone_remote.md`)
 
 Five controls: start/pause, ±1 minute, next segment, attention signal, and a
