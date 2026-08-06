@@ -17,6 +17,9 @@
     phased order, sizes, and what Schedule mode must never become.
 13. `13_launch_week.md` — **the single answer to "what am I doing this week."**
     Owns sequencing where the GTM docs disagree. Carries the pin blockers.
+14. `14_social_runbook.md` — how the accounts actually get built and fed, step
+    by step. Pinterest claim ordering, board setup, posting pace, what Metricool
+    is and isn't for, and where AI helps vs. where it gets you banned.
 
 `07_multidevice_sync.md` is **DEFERRED indefinitely** — spec only, not scheduled.
 See `12` §7.
