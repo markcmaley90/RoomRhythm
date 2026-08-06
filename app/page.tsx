@@ -334,6 +334,120 @@ function useFullscreen() {
 }
 
 // ══════════════════════════════════════════════════════════════
+// SIDE RAIL — Names and Noise, reachable at any time
+//
+// These were top-bar buttons that only existed on the idle screen, so the two
+// tools a teacher most wants MID-BLOCK ("pick someone", "the room is getting
+// loud") vanished the moment a timer started. A fixed vertical rail keeps them
+// one click away in every mode without competing with the clock for attention.
+// Sits at z-30: above the room UI, below the emergency button (z-40).
+// ══════════════════════════════════════════════════════════════
+function SideRail({ onNames, onNoise, noiseOn }: {
+  onNames: () => void; onNoise: () => void; noiseOn: boolean;
+}) {
+  const btn =
+    "group flex w-11 flex-col items-center gap-1 rounded-2xl border border-white/10 " +
+    "bg-black/40 py-3 text-white/60 backdrop-blur transition-all hover:w-auto hover:px-3 " +
+    "hover:text-white hover:bg-black/70";
+  return (
+    <div className="fixed right-4 top-1/2 z-30 flex -translate-y-1/2 flex-col gap-2">
+      <button onClick={onNames} title="Random name picker" className={btn}>
+        <span className="text-lg leading-none">🎲</span>
+        <span className="text-[10px] font-medium uppercase tracking-wider [writing-mode:vertical-rl] group-hover:hidden">
+          Names
+        </span>
+        <span className="hidden text-xs font-medium group-hover:inline">Names</span>
+      </button>
+      <button onClick={onNoise} title="Classroom noise meter"
+        className={`${btn} ${noiseOn ? "border-emerald-400/50 text-emerald-200" : ""}`}>
+        <span className="text-lg leading-none">🔊</span>
+        <span className="text-[10px] font-medium uppercase tracking-wider [writing-mode:vertical-rl] group-hover:hidden">
+          Noise
+        </span>
+        <span className="hidden text-xs font-medium group-hover:inline">Noise</span>
+      </button>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+// SOUND SETTINGS — one collapsible home for every sound control
+//
+// These were scattered: mute in the top bar, cue inline, sound cover in a
+// third place. A teacher setting up a room shouldn't hunt. Collapsed by
+// default because most never change them after the first session.
+// ══════════════════════════════════════════════════════════════
+function SoundSettings({
+  muted, onMuteToggle, soundType, onSoundChange, onPreview, cover, onCoverChange, accent,
+}: {
+  muted: boolean; onMuteToggle: () => void;
+  soundType: SoundType; onSoundChange: (s: SoundType) => void; onPreview: (s: SoundType) => void;
+  cover: AmbientId; onCoverChange: (a: AmbientId) => void;
+  accent: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const activeCover = AMBIENT_BEDS.find((b) => b.id === cover);
+  return (
+    <div className="w-full">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between text-xs uppercase tracking-widest opacity-60 hover:opacity-90 transition-opacity"
+      >
+        <span>Sound</span>
+        <span className="flex items-center gap-2 normal-case tracking-normal opacity-70">
+          <span>{muted ? "Muted" : "On"}</span>
+          <span>{open ? "▲" : "▼"}</span>
+        </span>
+      </button>
+
+      {open && (
+        <div className="mt-3 flex flex-col gap-3 text-xs">
+          <div className="flex items-center justify-between gap-2">
+            <span className="opacity-50">Room sound</span>
+            <button onClick={onMuteToggle}
+              className={`px-3 py-1 rounded-full font-semibold transition-all ${
+                !muted ? `${accent} text-white` : "bg-white/10 hover:bg-white/20"}`}>
+              {muted ? "🔇 Muted" : "🔔 On"}
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between gap-2">
+            <span className="opacity-50">Cue</span>
+            <SoundPicker soundType={soundType} onSoundChange={onSoundChange} onPreview={onPreview} />
+          </div>
+
+          <div className="h-px bg-white/10" />
+
+          <div>
+            <div className="flex items-baseline justify-between">
+              <span className="opacity-50">Sound cover</span>
+              <span className="text-[11px] opacity-40">masks hallway noise</span>
+            </div>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {AMBIENT_BEDS.map((b) => {
+                const locked = !isAmbientFree(b.id);
+                const on = cover === b.id;
+                return (
+                  <button key={b.id} onClick={() => !locked && onCoverChange(b.id)} disabled={locked}
+                    title={locked ? `${b.label} — Pro, coming soon` : b.hint}
+                    className={`px-2 py-1 rounded-lg border transition-all ${
+                      on ? "bg-indigo-500/40 border-indigo-400/60 text-indigo-50"
+                        : locked ? "bg-white/[0.03] border-white/5 text-white/25 cursor-not-allowed"
+                        : "bg-white/10 border-white/10 hover:bg-white/20"}`}>
+                    {locked ? "🔒" : b.emoji} {b.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1.5 text-[11px] leading-snug opacity-40">{activeCover?.hint}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
 // SOUND COVER — steady sound that masks room distractions.
 // Deliberately NOT 'focus music': background music measurably hurts reading
 // and verbal work, and the Mozart effect turned out to be arousal-and-mood,
@@ -1029,7 +1143,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
   if (projector) return <ProjectorView secondsLeft={secondsLeft} label={config.label} emoji={config.emoji} nearEnd={nearEnd} totalDuration={totalDurationRef.current} accent="#818cf8" onExit={() => setProjector(false)} />;
 
   return (
-    <div className={`min-h-screen ${config.bg} ${config.text} flex flex-col items-center justify-center transition-colors duration-700 p-6 pt-24 pb-28 relative ${emergencyActive ? "ring-8 ring-inset ring-red-500/60" : ""}`}
+    <div className={`min-h-screen ${config.bg} ${config.text} flex flex-col items-center justify-center transition-colors duration-700 p-6 pb-28 relative ${emergencyActive ? "ring-8 ring-inset ring-red-500/60" : ""}`}
       style={{ backgroundImage: "radial-gradient(ellipse 70% 55% at 50% 34%, rgba(129,140,248,0.14), transparent 72%)" }}>
 
       {/* Calm countdown: amber → indigo */}
@@ -1043,16 +1157,12 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
       <ScreenFlash trigger={flashTrigger} />
 
       <RoomTopBar emoji="🏫" name="Classroom" accentBg="bg-indigo-500/15" onBack={onBack}>
-        <button onClick={() => setShowNames(true)} className={CTRL_BTN}>🎲 Names</button>
-        <button onClick={() => setShowNoise(true)} className={CTRL_BTN}>🔊 Noise</button>
         <button onClick={() => setShowFeedback(true)} className={CTRL_BTN}>💡 Suggest a Feature</button>
         <button onClick={toggleFullscreen} className={CTRL_BTN}>{isFullscreen ? "⊠ Exit Full" : "⛶ Fullscreen"}</button>
         <button onClick={() => setProjector(true)} className={CTRL_BTN}>📽 Projector</button>
-        <button onClick={() => setMuted((m) => !m)}
-          className={`px-3 py-1.5 rounded-full text-sm font-medium border border-white/10 transition-all ${!muted ? "bg-white text-gray-900" : "bg-white/10 hover:bg-white/20"}`}>
-          {muted ? "🔇 Muted" : "🔔 Sound On"}
-        </button>
       </RoomTopBar>
+
+      <SideRail onNames={() => setShowNames(true)} onNoise={() => setShowNoise(true)} noiseOn={showNoise} />
 
       {showFeedback && <FeedbackModal profile="classroom" onClose={() => setShowFeedback(false)} />}
       {pendingMode && (
@@ -1177,11 +1287,14 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
                   {autoBreak ? "On" : "Off"}
                 </button>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="opacity-50">Cue</span>
-                <SoundPicker soundType={soundType} onSoundChange={setSoundType} onPreview={preview} />
-              </div>
             </div>
+            <div className="h-px bg-white/10" />
+            <SoundSettings
+              muted={muted} onMuteToggle={() => setMuted((m) => !m)}
+              soundType={soundType} onSoundChange={setSoundType} onPreview={preview}
+              cover={ambient} onCoverChange={setAmbient}
+              accent="bg-indigo-500"
+            />
             <div className="h-px bg-white/10" />
             <div className="flex flex-col items-center gap-1.5">
               <button onClick={copyShareLink}
@@ -1436,7 +1549,7 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
   if (projector) return <ProjectorView secondsLeft={secondsLeft} label={config.label} emoji={config.emoji} nearEnd={nearEnd} totalDuration={totalDurationRef.current} accent="#2dd4bf" onExit={() => setProjector(false)} />;
 
   return (
-    <div className={`min-h-screen ${config.bg} ${config.text} flex flex-col items-center justify-center transition-colors duration-700 p-6 pt-24 pb-28 relative ${emergencyActive ? "ring-8 ring-inset ring-red-500/60" : ""}`}
+    <div className={`min-h-screen ${config.bg} ${config.text} flex flex-col items-center justify-center transition-colors duration-700 p-6 pb-28 relative ${emergencyActive ? "ring-8 ring-inset ring-red-500/60" : ""}`}
       style={{ backgroundImage: "radial-gradient(ellipse 68% 52% at 50% 34%, rgba(45,212,191,0.12), transparent 72%)" }}>
 
       {/* Calm countdown: amber → indigo */}
@@ -1453,10 +1566,6 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
         <button onClick={() => setShowFeedback(true)} className={CTRL_BTN}>💡 Suggest a Feature</button>
         <button onClick={toggleFullscreen} className={CTRL_BTN}>{isFullscreen ? "⊠ Exit Full" : "⛶ Fullscreen"}</button>
         <button onClick={() => setProjector(true)} className={CTRL_BTN}>📽 Projector</button>
-        <button onClick={() => setMuted((m) => !m)}
-          className={`px-3 py-1.5 rounded-full text-sm font-medium border border-white/10 transition-all ${!muted ? "bg-white text-gray-900" : "bg-white/10 hover:bg-white/20"}`}>
-          {muted ? "🔇 Muted" : "🔔 Sound On"}
-        </button>
       </RoomTopBar>
 
       {showFeedback && <FeedbackModal profile="corporate" onClose={() => setShowFeedback(false)} />}
@@ -1561,11 +1670,14 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
                   {autoBreak ? "On" : "Off"}
                 </button>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="opacity-50">Cue</span>
-                <SoundPicker soundType={soundType} onSoundChange={setSoundType} onPreview={preview} />
-              </div>
             </div>
+            <div className="h-px bg-white/10" />
+            <SoundSettings
+              muted={muted} onMuteToggle={() => setMuted((m) => !m)}
+              soundType={soundType} onSoundChange={setSoundType} onPreview={preview}
+              cover={ambient} onCoverChange={setAmbient}
+              accent="bg-teal-500"
+            />
           </div>
         </div>
       )}
