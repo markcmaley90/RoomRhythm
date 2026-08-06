@@ -153,11 +153,26 @@ Schedule them in **Pinterest's own scheduler** — free, native, no API quirks.
 ## 3. Metricool — what it's actually for
 
 **Correction to `13_launch_week.md`:** the free tier is **20 posts/month on 1
-brand**, not 50. A single week of pins at 3–5/day spends the entire month.
+brand**, not 50.
 
-So: **pins go through Pinterest's native scheduler. Metricool handles Instagram
-and gives you one cross-network analytics view.** 20 posts/month is comfortable
-for 2–3 Instagram posts a week, which is the realistic cadence anyway.
+**That is not disqualifying, and an earlier draft of this doc overstated it.**
+20/month is ~5/week, which is a fine cadence for a fresh account — Pinterest
+rewards consistency far more than volume, and a new profile posting 5 well-made
+pins a week for a month looks healthier than one dumping 20 in three days.
+
+The real question is narrower: **should scarce quota go to pins when Pinterest
+schedules them free?** Budget it deliberately —
+
+| Use | Posts/month |
+|---|---|
+| Instagram, 2–3/week | ~10 |
+| Pins scheduled *through Metricool* | ~10 |
+| Pins scheduled natively in Pinterest | unlimited, free |
+
+If you want one calendar showing everything, spend the quota — the convenience
+is real. If you want maximum pin volume, schedule pins natively and let
+Metricool own Instagram plus the cross-network analytics view. Either works;
+just don't discover the ceiling mid-batch.
 
 Setup (~15 min): metricool.com → free account → connect Instagram (needs a
 Business or Creator account linked to a Facebook Page) → optionally connect

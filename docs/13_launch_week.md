@@ -261,10 +261,10 @@ If one tool across Pinterest + Instagram is wanted:
 | Tailwind | **5 posts/month** | Too restrictive for a 15-pin batch |
 
 **Correction (Aug 6):** this table previously said Metricool free was 50
-posts/month. It is **20**, on 1 brand. That kills it as the pin scheduler — a
-single week at 3–5 pins/day spends the whole month's quota. Pinterest's native
-scheduler is free and unlimited, so pins go there and Metricool covers Instagram
-plus cross-network analytics. Full sequencing in `14_social_runbook.md`.
+posts/month. It is **20**, on 1 brand — enough for ~5 posts/week, which is a
+reasonable cadence, not a blocker. Pinterest's own scheduler is free and
+unlimited, so the quota is best spent on Instagram unless you want one combined
+calendar. Full sequencing in `14_social_runbook.md` §3.
 
 **Pace: 3–5 pins/day maximum on a fresh account.** Higher volume on a new profile
 risks a spam flag, and there is no appeal.
