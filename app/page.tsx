@@ -351,34 +351,42 @@ function SideRail({ onNames, onNoise, namesOn, noiseOn }: {
   // chevron points the way the panel will travel — out toward the clock when
   // closed, back to the wall when open — so the tab reads as a drawer handle
   // rather than a mystery icon.
+  // Slate, not black. Every room background is a saturated colour wash, so a
+  // dark-transparent tab reads as a hole punched in the gradient rather than a
+  // control. A neutral grey surface is the one value that stays legibly "a
+  // different thing" against indigo, teal and amber alike.
+  //
+  // The chevron sits ABOVE the icon: it's the drawer handle, and a handle you
+  // read after the label isn't doing its job.
   const btn =
-    "flex w-14 flex-col items-center gap-1.5 rounded-2xl border border-white/10 " +
-    "bg-black/45 py-4 text-white/70 backdrop-blur transition-all " +
-    "hover:text-white hover:bg-black/70";
+    "flex w-14 flex-col items-center gap-1.5 rounded-2xl border border-white/20 " +
+    "bg-slate-700/80 py-3.5 text-white/80 shadow-lg backdrop-blur transition-all " +
+    "hover:bg-slate-600/90 hover:text-white";
+  const chev = "text-base leading-none opacity-80";
   return (
     <>
       <div className="fixed left-4 top-1/2 z-30 -translate-y-1/2">
         <button onClick={onNames}
           aria-expanded={namesOn}
-          title={namesOn ? "Hide the name picker" : "Random name picker"}
-          className={`${btn} ${namesOn ? "border-indigo-400/50 text-indigo-200" : ""}`}>
+          title={namesOn ? "Collapse the name picker" : "Random name picker"}
+          className={`${btn} ${namesOn ? "border-indigo-300/60 bg-indigo-900/70 text-indigo-100" : ""}`}>
+          <span aria-hidden className={chev}>{namesOn ? "‹" : "›"}</span>
           <span className="text-2xl leading-none">🎲</span>
           <span className="text-[11px] font-semibold uppercase tracking-wider [writing-mode:vertical-rl]">
             Names
           </span>
-          <span aria-hidden className="text-sm leading-none opacity-70">{namesOn ? "‹" : "›"}</span>
         </button>
       </div>
       <div className="fixed right-4 top-1/2 z-30 -translate-y-1/2">
         <button onClick={onNoise}
           aria-expanded={noiseOn}
-          title={noiseOn ? "Hide the noise meter" : "Classroom noise meter"}
-          className={`${btn} ${noiseOn ? "border-emerald-400/50 text-emerald-200" : ""}`}>
+          title={noiseOn ? "Collapse the noise meter" : "Classroom noise meter"}
+          className={`${btn} ${noiseOn ? "border-emerald-300/60 bg-emerald-900/70 text-emerald-100" : ""}`}>
+          <span aria-hidden className={chev}>{noiseOn ? "›" : "‹"}</span>
           <span className="text-2xl leading-none">🔊</span>
           <span className="text-[11px] font-semibold uppercase tracking-wider [writing-mode:vertical-rl]">
             Noise
           </span>
-          <span aria-hidden className="text-sm leading-none opacity-70">{noiseOn ? "›" : "‹"}</span>
         </button>
       </div>
     </>
@@ -916,8 +924,15 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
   // reload. Drives the email ask (>=1) and, later, the feature-suggest prompt
   // (>=2, docs/13_launch_week.md D3) without needing a localStorage carve-out.
   const [blocksDone, setBlocksDone]         = useState(0);
-  const [showNames, setShowNames]           = useState(false);
-  const [showNoise, setShowNoise]           = useState(false);
+  // Both panels start OPEN. A collapsed tab against the wall is an icon nobody
+  // clicks; a teacher who never sees the picker never learns it exists. So the
+  // page introduces itself, then gets out of the way — see the retract effect.
+  const [showNames, setShowNames]           = useState(true);
+  const [showNoise, setShowNoise]           = useState(true);
+  // Set the moment the teacher touches either panel or tab. Cancels the
+  // auto-retract for the rest of the session: once someone is using a panel,
+  // yanking it shut on a timer is the software fighting the person.
+  const [railPinned, setRailPinned]         = useState(false);
 
   const intervalRef      = useRef<NodeJS.Timeout | null>(null);
   // Wall-clock moment the running block ends. null = needs re-anchoring (paused,
@@ -1140,6 +1155,25 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
     stopEmergencyRef.current?.(); stopEmergencyRef.current = null;
   }
 
+  /**
+   * Show both panels briefly on arrival, then retract them.
+   *
+   * The trade: discoverability vs. a clean clock. Opening on load means every
+   * teacher sees that a name picker and a noise meter exist; retracting means
+   * the room isn't looking at two panels flanking the timer all period. Four
+   * seconds is long enough to read two headings, and any contact at all —
+   * pointer over a panel, focus into it, or a click on either tab — cancels
+   * the retract permanently.
+   */
+  useEffect(() => {
+    if (railPinned) return;
+    const t = setTimeout(() => {
+      setShowNames(false);
+      setShowNoise(false);
+    }, 4000);
+    return () => clearTimeout(t);
+  }, [railPinned]);
+
   // The alarm is a self-rescheduling setTimeout loop inside lib/audio.ts, fully
   // independent of React. If this screen unmounts while it's sounding (teacher
   // hits "← Rooms" without stopping it first) nothing can ever silence it — the
@@ -1174,8 +1208,8 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
       </RoomTopBar>
 
       <SideRail
-        onNames={() => setShowNames((v) => !v)}
-        onNoise={() => setShowNoise((v) => !v)}
+        onNames={() => { setRailPinned(true); setShowNames((v) => !v); }}
+        onNoise={() => { setRailPinned(true); setShowNoise((v) => !v); }}
         namesOn={showNames}
         noiseOn={showNoise}
       />
@@ -1190,8 +1224,19 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
           onConfirm={confirmPending}
         />
       )}
-      {showNames && <NamePicker onClose={() => setShowNames(false)} />}
-      {showNoise && <NoiseMeter muted={muted} onClose={() => setShowNoise(false)} />}
+      {/* Any contact with a panel pins it — pointer over it or keyboard focus
+          into it both count, so the intro retract can't close something the
+          teacher is mid-way through reading or typing into. */}
+      {showNames && (
+        <div onPointerEnter={() => setRailPinned(true)} onPointerDown={() => setRailPinned(true)} onFocusCapture={() => setRailPinned(true)}>
+          <NamePicker onClose={() => { setRailPinned(true); setShowNames(false); }} />
+        </div>
+      )}
+      {showNoise && (
+        <div onPointerEnter={() => setRailPinned(true)} onPointerDown={() => setRailPinned(true)} onFocusCapture={() => setRailPinned(true)}>
+          <NoiseMeter muted={muted} onClose={() => { setRailPinned(true); setShowNoise(false); }} />
+        </div>
+      )}
       <EmergencyButton onActivate={handleEmergencyActivate} onDeactivate={handleEmergencyDeactivate} />
 
       {/* Mode Label */}
