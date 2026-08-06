@@ -86,6 +86,75 @@ thing launch week can actually bank.** Ten minutes at formspree.io.
 
 ---
 
+## Four decisions made Aug 6
+
+### D1. Analytics — ship Plausible now, revisit at portfolio scale
+
+`lib/analytics.ts` and `layout.tsx` are already wired for Plausible with a closed
+event map, and it's cookieless. **Set the env var and move on** — analytics tooling
+must not block launch.
+
+For running several companies off one tool later:
+
+| Tool | Cost | Note |
+|---|---|---|
+| Plausible | $9/mo, **pageview-based** | Already wired. Cost compounds unpredictably across a portfolio. |
+| **Umami Cloud** | **$20/mo flat, unlimited sites** | Cheaper past ~4 properties. Cookieless. Self-host is free (MIT). |
+| PostHog | Free to 1M events/mo | Tempting, but see below. |
+
+**Do not take PostHog for RoomRhythm.** Our own Instagram card says "No ads, no
+trackers" and `brand/BRAND.md` commits to cookieless analytics. PostHog's default
+configuration would make that claim shaky, and the privacy promise is the
+positioning. It's a fine choice for the other companies.
+
+### D2. Email capture — NOT on entry
+
+Requested: capture email when someone enters the platform. **Declining, and this
+matters.**
+
+"No login, nothing to install, just open it and teach" is the differentiator, and
+it's printed on every marketing asset we've made. An entry-gate form makes us
+identical to every tool a teacher has already abandoned. We'd trade the single
+best thing about the product for a slightly larger list.
+
+**Where it belongs instead: after a completed focus block.** Goodwill peaks when
+the thing just worked, and the ask is earned rather than tolled.
+
+`EmailCapture` already supports `run_complete` — but that source is only wired
+into the Testing runner. **Gap to close: fire it in Classroom when a focus block
+ends.** That's the highest-intent moment in the product and it currently captures
+nothing.
+
+### D3. Feature-suggest prompt — trigger on sessions, not days
+
+Requested: a prompt after a day of use. **Cannot be built as described.**
+
+Measuring "a day of use" requires persistence, and `CLAUDE.md` permits exactly one
+`localStorage` carve-out — the name-picker roster. A second carve-out would need
+an explicit amendment.
+
+**Better trigger anyway: after 2–3 completed blocks in one sitting.** Purely
+in-memory, no rule change, and it targets *engaged* users rather than merely
+returning ones. Someone who ran three blocks today has an opinion worth asking for.
+
+### D4. Beta framing — yes, everywhere except Testing
+
+Lean in. It is honest (no checkout, features shipping weekly), it converts the
+gap into an invitation, and it matches the voice already in the launch kit —
+solo builder, tell me what to build next. Concretely it buys:
+
+- An accurate reason there's no paid tier yet
+- Latitude on bugs teachers would otherwise hold against a "finished" product
+- A real reason to give an email — *shape what gets built*, not "join our newsletter"
+- A clean runway to founding-member pricing later without bait-and-switch
+
+**The carve-out: never label the Testing profile beta.** A teacher forgives a beta
+timer. A proctor does not want a beta clock on exam day, and that audience is the
+site-license flywheel. Beta belongs on the landing page, the Classroom profile,
+and marketing copy — not on the section runner.
+
+---
+
 ## The order
 
 ### Today

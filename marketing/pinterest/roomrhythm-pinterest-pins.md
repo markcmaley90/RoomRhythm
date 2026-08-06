@@ -1,10 +1,29 @@
 # RoomRhythm — Pinterest Pin Copy Set (15 pins)
 
-**Destination URLs are placeholders — confirm your actual slugs before scheduling.**
+**Sequencing lives in `docs/13_launch_week.md`.** That doc owns when this batch
+goes out and what has to be true first. This file owns the copy only.
+
+**URLs are verified** against `data/templates/seed.ts` and the
+`app/templates/[templateId]` route. Every exam pin points at
+`/templates/seed-final-90` — the free template, which carries Standard, 1.5×
+**and** 2× timing groups, so it demonstrates the whole extended-time capability
+without a paywall. The Pro template landing pages stay public as SEO surface;
+they are not where earned attention should land. See `13_launch_week.md` B2.
 
 **Posting cadence:** 3 pins/day across 5 days. Space them out (e.g. morning, midday, evening). Do not bulk-upload.
 
 **Account setup note:** Because roomrhythm.com is an unrelated home-decor blog with existing Pinterest presence, keep the brand name out of pin titles. Put "RoomRhythm" in your profile name and bio only. Pin titles carry search keywords.
+
+**Trademark rule — non-negotiable.** No third-party mark (SAT®, ACT®, AP®) appears
+in a pin **title**, ever. Where a pin references a mark, the description carries
+the full source-identified template name *and* the verbatim disclaimer from
+`data/templates/seed.ts`. This costs us "SAT timer" as a keyword; that keyword is
+also where all the legal exposure sits. See `docs/09_trademark_and_disclaimers.md`.
+
+**Never write "proctor" or "proctoring."** RoomRhythm is a room clock, not
+proctoring software — that boundary is the positioning (`brand/BRAND.md`). Never
+describe it as timing a live official administration; the official digital SAT is
+timed individually inside Bluebook, not by a shared room clock (`seed.ts:68`).
 
 ---
 
@@ -53,43 +72,43 @@ Create these four boards first. Pinterest wants pins sorted into topically coher
 - **Title:** Final Exam Timer for Teachers
 - **Description:** Run final exam day from one screen. Section timing, mandated warning announcements, and a clean full-screen display students can read from anywhere in the room. Free template.
 - **Keywords:** final exam timer, exam timer for teachers, test timer
-- **URL:** roomrhythm.org/templates/final-exam
+- **URL:** roomrhythm.org/templates/seed-final-90
 
 ### Pin 6
 - **Title:** Exam Timer With Extended Time Support
 - **Description:** Run standard and extended time side by side on one screen. Set 1.5x and 2x timing groups so every student's clock is right without running two devices. Built for accommodations.
 - **Keywords:** exam timer with extended time, extended time accommodations, 1.5x testing time
-- **URL:** roomrhythm.org/templates/final-exam
+- **URL:** roomrhythm.org/templates/seed-final-90
 
 ### Pin 7
 - **Title:** How to Time Extended-Time Accommodations Without Losing Track
 - **Description:** Two timing groups, one screen, warnings that fire correctly for each. No spreadsheets, no second stopwatch, no student names on screen. A cleaner way to run accommodated testing.
 - **Keywords:** testing accommodations, extended time testing, accommodation timing
-- **URL:** roomrhythm.org/templates/final-exam
+- **URL:** roomrhythm.org/templates/seed-final-90
 
 ### Pin 8
-- **Title:** SAT Test Day Timer for Proctors
-- **Description:** Section-by-section timing with the required warning announcements built in. Advance between sections when you're ready, not automatically. Keeps test day on script.
-- **Keywords:** SAT timer, SAT proctor timer, standardized test timer
-- **URL:** roomrhythm.org/templates/sat
+- **Title:** Mock Practice Test Timer for Exam Day
+- **Description:** Run a full-length practice administration from one screen — section timing, wall-clock warnings, and manual advance so you move when the room is ready. RoomRhythm's Mock Practice Timing for the SAT® Exam. SAT® is a registered trademark of the College Board, which was not involved in the production of, and does not endorse, this product.
+- **Keywords:** mock test timer, practice test timer, full length practice test
+- **URL:** roomrhythm.org/templates/seed-final-90
 
 ### Pin 9
-- **Title:** ACT Timer for Test Day
-- **Description:** Run ACT sections from one screen with timed warnings and a clear display. Built for the person actually standing in the room reading the script.
-- **Keywords:** ACT timer, ACT proctor, test day timer
-- **URL:** roomrhythm.org/templates/act
+- **Title:** Practice Test Timer With Section Warnings
+- **Description:** Time each section of a mock administration and let the screen make the callouts. Warnings fire on the wall clock, and nothing advances until you say so. RoomRhythm's Mock Practice Timing for the ACT® Test. ACT® is a registered trademark of ACT, Inc., which was not involved in the production of, and does not endorse, this product.
+- **Keywords:** practice test timer, mock exam timer, section timer for testing
+- **URL:** roomrhythm.org/templates/seed-final-90
 
 ### Pin 10
-- **Title:** AP Exam Timer for Proctors
-- **Description:** Section timing and warning announcements for AP administration, on a screen the whole room can read. Free browser tool, nothing to install.
-- **Keywords:** AP exam timer, AP proctor timer, AP test day
-- **URL:** roomrhythm.org/templates/ap
+- **Title:** Two-Section Mock Exam Timer for Schools
+- **Description:** Multiple choice, a break, then free response — timed end to end on one readable screen. Built for paper practice runs, not live official administrations. RoomRhythm's Mock Practice Timing for the AP® Exam. AP® is a registered trademark of the College Board, which was not involved in the production of, and does not endorse, this product.
+- **Keywords:** mock exam timer, practice exam timer, school exam timer
+- **URL:** roomrhythm.org/templates/seed-final-90
 
 ### Pin 11
-- **Title:** Certification Exam Timer
-- **Description:** Timed sections, clear warnings, professional display. For certification and credentialing exams that need to run to the minute.
-- **Keywords:** certification exam timer, proctoring timer, timed exam
-- **URL:** roomrhythm.org/templates/certification
+- **Title:** Training and Certification Session Timer
+- **Description:** Timed modules, a break, and a closed-book assessment at the end — all on one screen the whole room can read. For warehouse, compliance, and equipment certification sessions that have to run to the minute.
+- **Keywords:** certification exam timer, training session timer, timed assessment
+- **URL:** roomrhythm.org/templates/seed-final-90
 
 ---
 
@@ -135,7 +154,11 @@ Create these four boards first. Pinterest wants pins sorted into topically coher
 
 ## Before you schedule
 
-- [ ] Confirm real URLs for all five template pages
+Blockers B1–B4 in `docs/13_launch_week.md` must be cleared first — in particular
+`NEXT_PUBLIC_PLAUSIBLE_DOMAIN`, without which none of this batch is attributable.
+
+- [x] Real template URLs confirmed against `data/templates/seed.ts`
 - [ ] Set up Pinterest as a **business account** (free, unlocks analytics)
-- [ ] Claim roomrhythm.org in Pinterest settings — this gets you attribution on every pin and repin
-- [ ] Verify each landing page loads correctly on mobile
+- [ ] Claim roomrhythm.org in Pinterest settings — attribution on every pin and repin
+- [ ] Repin 15–20 other people's pins before posting any of our own
+- [ ] Verify `/templates/seed-final-90` loads correctly on mobile
