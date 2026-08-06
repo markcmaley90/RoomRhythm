@@ -73,6 +73,27 @@ lift one thing, verify parity, commit. Re-run the logic test suite (68
 assertions) plus a full Testing-runner browser pass before moving on. If the
 Testing profile behaves differently in any way, the refactor is wrong.
 
+### Phase 2.5 — Tab shell only (SHIPPED Aug 6)
+
+Classroom setup now sits under two tabs: **Manual** and **My Periods**.
+
+Manual holds everything that existed and behaves identically — the Phase 2
+acceptance bar ("a teacher who never opens Schedule mode sees no change") is met
+by construction, since nothing inside it moved.
+
+**My Periods has no runner.** It describes what a schedule will do, says
+plainly that it's being built next and that Manual will always keep working,
+and offers the beta list (`EmailCapture source="schedule_waitlist"`). That
+source is the highest-intent signal in the product: clicking that tab *is* the
+feature request, and it tells us how much Phase 3 is actually wanted before we
+spend five days on it.
+
+**Deliberately NOT labelled "Pro."** `CLAUDE.md` sells free as *full* Classroom
+and commits to "never cripple the free core." Schedule mode is core Classroom —
+the 80% of periods that follow a cadence. Marking it Pro today would price a
+decision we haven't made and tell every free teacher their main workflow is
+heading behind a paywall. Revisit at Phase 6 with the rest of the tiering.
+
 ### Phase 3 — Schedule mode MVP (~3–5 days)
 
 A Classroom-flavoured runner over the extracted core.

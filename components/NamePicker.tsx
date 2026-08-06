@@ -187,7 +187,7 @@ export default function NamePicker({ onClose }: { onClose: () => void }) {
       block it belongs in. z-20 keeps it under the side rail and the emergency
       button, and the centered timer stays clear between the two panels.
     */
-    <div className="fixed left-20 top-1/2 z-20 flex max-h-[90vh] w-72 -translate-y-1/2 flex-col gap-3 overflow-y-auto rounded-3xl border border-white/10 bg-black/50 p-4 shadow-2xl backdrop-blur">
+    <div className="fixed left-20 top-1/2 z-20 flex max-h-[90vh] w-72 -translate-y-1/2 flex-col gap-3 overflow-y-auto rounded-3xl border border-indigo-400/25 bg-indigo-950/80 p-4 shadow-2xl ring-1 ring-inset ring-white/5 backdrop-blur">
       {/* Collapse, not close: the chevron points back at the wall the panel
           came out of, so it reads as "put this away" rather than "delete". */}
       <div className="flex items-start justify-between">

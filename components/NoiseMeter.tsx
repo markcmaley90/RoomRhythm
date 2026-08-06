@@ -219,7 +219,7 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
       that's the shape of the space beside a centered ring — and because a
       column filling upward reads as "level" at a glance from across the room.
     */
-    <div className="fixed right-20 top-1/2 z-20 flex w-60 -translate-y-1/2 flex-col gap-3 rounded-3xl border border-white/10 bg-black/50 p-4 shadow-2xl backdrop-blur">
+    <div className="fixed right-20 top-1/2 z-20 flex w-60 -translate-y-1/2 flex-col gap-3 rounded-3xl border border-emerald-400/25 bg-emerald-950/80 p-4 shadow-2xl ring-1 ring-inset ring-white/5 backdrop-blur">
       {/*
         Collapse, not close — mirrors the name picker on the other side.
 

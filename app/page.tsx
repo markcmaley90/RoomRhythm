@@ -933,6 +933,13 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
   // auto-retract for the rest of the session: once someone is using a panel,
   // yanking it shut on a timer is the software fighting the person.
   const [railPinned, setRailPinned]         = useState(false);
+  // Which setup tab is showing. "periods" is the Schedule-mode surface — see
+  // docs/12_build_plan.md phase 3. It has no runner yet, by decision.
+  const [setupTab, setSetupTab]             = useState<"manual" | "periods">("manual");
+  // Break length was pinned to the grade band's breakMin — always 5, with no
+  // way to change it. A K–2 brain break and a 9–12 stretch are not the same
+  // length, and the band table said they were.
+  const [breakMinutes, setBreakMinutes]     = useState(GRADE_BANDS[initBand].breakMin);
 
   const intervalRef      = useRef<NodeJS.Timeout | null>(null);
   // Wall-clock moment the running block ends. null = needs re-anchoring (paused,
@@ -944,12 +951,14 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
   const modeRef          = useRef(mode);
   const bandIndexRef     = useRef(bandIndex);
   const customMinutesRef = useRef(customMinutes);
+  const breakMinutesRef  = useRef(breakMinutes);
   const stopEmergencyRef = useRef<(() => void) | null>(null);
 
   useEffect(() => { modeRef.current = mode; }, [mode]);
   useEffect(() => { bandIndexRef.current = bandIndex; }, [bandIndex]);
   useEffect(() => { secondsLeftRef.current = secondsLeft; }, [secondsLeft]);
   useEffect(() => { customMinutesRef.current = customMinutes; }, [customMinutes]);
+  useEffect(() => { breakMinutesRef.current = breakMinutes; }, [breakMinutes]);
 
   const band    = GRADE_BANDS[bandIndex];
   const config  = CLASSROOM_MODES[mode];
@@ -1061,7 +1070,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
     if (intervalRef.current) clearInterval(intervalRef.current);
     warningFiredRef.current = false;
     deadlineRef.current = null; // re-anchor from the new duration
-    const secs = m === "calm" ? 0 : m === "focus" ? customMinutesRef.current * 60 : band.breakMin * 60;
+    const secs = m === "calm" ? 0 : m === "focus" ? customMinutesRef.current * 60 : breakMinutesRef.current * 60;
     totalDurationRef.current = secs;
     setMode(m); setSecondsLeft(secs);
     setRunning(m === "focus" || m === "break");
@@ -1144,7 +1153,11 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
     document.title = "RoomRhythm";
   }
 
-  function selectBand(i: number) { setBandIndex(i); setCustomMinutes(GRADE_BANDS[i].defaultMin); }
+  function selectBand(i: number) {
+    setBandIndex(i);
+    setCustomMinutes(GRADE_BANDS[i].defaultMin);
+    setBreakMinutes(GRADE_BANDS[i].breakMin);
+  }
 
   function handleEmergencyActivate() {
     setEmergencyActive(true);
@@ -1301,9 +1314,54 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
         </div>
       )}
 
-      {/* Idle — unified settings panel */}
+      {/* Idle — unified settings panel, under two tabs.
+          Manual is "I'll drive": one block at a time, and it stays the default
+          and stays untouched. My Periods is Schedule mode — the cadence a
+          teacher already has in their head. See docs/12_build_plan.md §1. */}
       {mode === "idle" && (
         <div className="flex flex-col items-center gap-4 w-full max-w-md mb-6">
+          <div className="flex w-full gap-1 rounded-2xl border border-white/10 bg-white/5 p-1">
+            <button onClick={() => setSetupTab("manual")}
+              className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
+                setupTab === "manual" ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/25" : "text-white/60 hover:bg-white/10 hover:text-white"
+              }`}>
+              Manual
+            </button>
+            <button onClick={() => setSetupTab("periods")}
+              className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
+                setupTab === "periods" ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/25" : "text-white/60 hover:bg-white/10 hover:text-white"
+              }`}>
+              My Periods
+            </button>
+          </div>
+
+          {setupTab === "periods" ? (
+            <div className="w-full rounded-2xl border border-white/10 bg-slate-900/70 p-5 shadow-xl">
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-white">Run your whole period</h3>
+                <span className="rounded-full bg-indigo-500/25 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-200">
+                  Coming soon
+                </span>
+              </div>
+              <p className="mt-2 text-sm leading-relaxed text-white/60">
+                Build your cadence once — do-now, teach, work time, transition, pack up — and the
+                screen runs it in order. Nothing advances without you. Presets for a 50-minute
+                period, a 90-minute block, and an elementary literacy block.
+              </p>
+              <p className="mt-3 text-xs text-white/40">
+                This is what I&apos;m building next. Manual mode keeps working exactly as it does
+                today, and always will.
+              </p>
+              <div className="mt-4">
+                <EmailCapture
+                  source="schedule_waitlist"
+                  prompt="Want it early? I'll email the beta list first."
+                  cta="Join the beta list"
+                />
+              </div>
+            </div>
+          ) : (
+          <>
           <div className="grid grid-cols-4 gap-2 w-full">
             {GRADE_BANDS.map((b, i) => (
               <button key={b.label} onClick={() => selectBand(i)}
@@ -1329,6 +1387,23 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
                 Presets follow classroom attention-span research
                 <span className="text-indigo-300 font-semibold"> — fully adjustable</span>
               </p>
+            </div>
+            <div className="h-px bg-white/10" />
+            {/* Break length. Was hard-coded to the band's breakMin — 5 minutes
+                for every grade, unchangeable. A K–2 wiggle break and a 9–12
+                stretch are not the same length. */}
+            <div className="flex items-center justify-between gap-3 text-xs flex-wrap">
+              <span className="opacity-50">Break length</span>
+              <div className="flex items-center gap-1.5">
+                {[2, 3, 5, 10].map((m) => (
+                  <button key={m} onClick={() => setBreakMinutes(m)}
+                    className={`px-2.5 py-1 rounded-lg tabular-nums transition-all ${
+                      breakMinutes === m ? "bg-emerald-500/40 text-emerald-100" : "bg-white/10 hover:bg-white/20"
+                    }`}>
+                    {m}m
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="h-px bg-white/10" />
             <div className="flex items-center justify-between gap-3 text-xs flex-wrap">
@@ -1365,6 +1440,8 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
               and the handoff is real. See docs/12_build_plan.md phase 4.
             */}
           </div>
+          </>
+          )}
         </div>
       )}
 

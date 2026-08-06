@@ -13,7 +13,12 @@ import { useState } from "react";
 
 const ENDPOINT = process.env.NEXT_PUBLIC_FEEDBACK_ENDPOINT;
 
-export type EmailCaptureSource = "share" | "template_page" | "run_complete";
+export type EmailCaptureSource =
+  | "share"
+  | "template_page"
+  | "run_complete"
+  /** Clicked into the "My Periods" tab — the highest-intent signal we get. */
+  | "schedule_waitlist";
 
 // One quiet card per surface per session — dismiss OR submit hides it. In-memory
 // only (no cookie, no localStorage); resets on reload.
@@ -28,7 +33,18 @@ function domainOf(email: string): string {
   return (parts.length === 2 && parts[1] ? parts[1] : "").toLowerCase();
 }
 
-export default function EmailCapture({ source }: { source: EmailCaptureSource }) {
+export default function EmailCapture({
+  source,
+  prompt = "Get updates — we’ll email when site licenses and new templates land.",
+  cta = "Notify me",
+  done = "You’re on the list.",
+}: {
+  source: EmailCaptureSource;
+  /** Why this ask, here. A waitlist and a post-block nudge are not the same offer. */
+  prompt?: string;
+  cta?: string;
+  done?: string;
+}) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [hidden, setHidden] = useState(() => retired.has(source));
@@ -71,7 +87,7 @@ export default function EmailCapture({ source }: { source: EmailCaptureSource })
   if (status === "done") {
     return (
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-center text-sm text-white/70">
-        ✓ You&apos;re on the list.
+        ✓ {done}
       </div>
     );
   }
@@ -79,9 +95,7 @@ export default function EmailCapture({ source }: { source: EmailCaptureSource })
   return (
     <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-5">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-sm text-white/70">
-          Get updates — we&apos;ll email when site licenses and new templates land.
-        </p>
+        <p className="text-sm text-white/70">{prompt}</p>
         <button
           onClick={dismiss}
           aria-label="Dismiss"
@@ -104,7 +118,7 @@ export default function EmailCapture({ source }: { source: EmailCaptureSource })
           disabled={status === "sending"}
           className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition-all hover:bg-amber-400 disabled:opacity-50"
         >
-          {status === "sending" ? "Sending…" : "Notify me"}
+          {status === "sending" ? "Sending…" : cta}
         </button>
       </form>
       {status === "error" && (
