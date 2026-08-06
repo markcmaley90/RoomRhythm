@@ -58,26 +58,32 @@ landing on a paywall is the worst first impression available to us, and there is
 no checkout to convert them with anyway. The Pro landing pages stay public as SEO
 surface — they just aren't where paid ads of attention should point.
 
-### B3. Analytics are blind
+### ~~B3. Analytics are blind~~ — CLOSED Aug 6
 
-`NEXT_PUBLIC_PLAUSIBLE_DOMAIN` is unset, so the script never renders and every
-channel is unattributed. Set it before the first post or launch week produces no
-data worth reviewing.
+`NEXT_PUBLIC_PLAUSIBLE_DOMAIN` is set in Vercel across all three environments and
+`plausible.io/roomrhythm.org` is receiving pageviews. 30-day trial started Aug 6;
+decide on the paid plan in September against real numbers, not a guess. One
+Plausible subscription covers unlimited sites (priced on total pageviews), so
+DealScope/Commons/Groundwork can share it rather than buying separate tools.
 
-### B4. Email capture renders nothing
+### ~~B4. Email capture renders nothing~~ — CLOSED Aug 6
 
-`NEXT_PUBLIC_FEEDBACK_ENDPOINT` is unset. There is no way to take money (no
-Stripe, no accounts — see `12_build_plan.md` Phase 6), so **the list is the only
-thing launch week can actually bank.** Ten minutes at formspree.io.
+`NEXT_PUBLIC_FEEDBACK_ENDPOINT` is set to a Formspree endpoint (free tier, 50
+submissions/month — watch the ceiling). There is still no way to take money (no
+Stripe, no accounts — see `12_build_plan.md` Phase 6), so **the list remains the
+only thing launch week can actually bank.**
 
 ---
 
 ## Already shipped — don't rebuild
 
-- **Projector-corner URL.** `app/page.tsx:599–602` renders `RoomRhythm ·
-  roomrhythm.org` bottom-right in projector mode, driven by
-  `NEXT_PUBLIC_SITE_URL`. Thirty students plus every adult entering the room, an
-  hour a day. It needs the env var set, not an hour of work.
+- **Projector-corner URL.** Renders `RoomRhythm · roomrhythm.org` bottom-right in
+  projector mode, driven by `NEXT_PUBLIC_SITE_URL`. Thirty students plus every
+  adult entering the room, an hour a day.
+  **Fixed Aug 6:** it was `text-sm opacity-40` on near-black — legible on a
+  laptop, a ghost on a projector. "Already shipped" was the wrong call: it was
+  rendering and invisible, which is worse than missing, because nobody rechecks
+  a box that's already ticked. Now `text-lg` at `text-white/55`.
 - **OG image.** `public/og-image.png` is 1200×630 with metadata wired. Only the
   paste-into-Facebook render test remains.
 - **Print flyer.** `marketing/print/flyer-staff-room.pdf`, QR verified. Free
@@ -125,6 +131,12 @@ into the Testing runner. **Gap to close: fire it in Classroom when a focus block
 ends.** That's the highest-intent moment in the product and it currently captures
 nothing.
 
+**Shipped Aug 6.** Classroom counts completed focus blocks in memory
+(`blocksDone`, no storage) and renders the card once the room returns to idle —
+so it can never appear over a running clock. This is now the *only* Classroom
+capture surface: the share button that previously carried `source="share"` was
+removed the same day (see D5).
+
 ### D3. Feature-suggest prompt — trigger on sessions, not days
 
 Requested: a prompt after a day of use. **Cannot be built as described.**
@@ -148,7 +160,48 @@ solo builder, tell me what to build next. Concretely it buys:
 - A real reason to give an email — *shape what gets built*, not "join our newsletter"
 - A clean runway to founding-member pricing later without bait-and-switch
 
-**The carve-out: never label the Testing profile beta.** A teacher forgives a beta
+### D5. Share link — button removed, encoding kept
+
+The Classroom share link copied one teacher's slider positions. The recipient
+could reproduce that in ten seconds, and the copy underneath promised subs and
+co-teachers a handoff it could not deliver. Shipping a marketing push around it
+would have been selling the weakest thing in the product.
+
+**`lib/share.ts` stays untouched** — `SHARE_PARAM`, `decodeShareConfig`, and the
+seeding path in `ClassroomApp` all remain, so every link already copied still
+opens correctly. The button returns in Phase 4 as **"Copy schedule link"**, where
+the payload is a whole period cadence and the sub/headmaster handoff is real.
+That is the feature the current copy was describing; it just wasn't built yet.
+
+### D6. Names and Noise are docked panels, not modals
+
+Both were `fixed inset-0` overlays. The two tools a teacher reaches for
+*mid-block* — "pick someone", "the room is getting loud" — blanked out the clock
+the whole room was watching, which made them unusable exactly when they were
+needed. Both are now panels docked to the edges (Names left, Noise right, z-20
+under the rail), with the toggle on the side its panel opens from. The timer is
+never covered.
+
+The noise bar runs vertically now: it's the shape of the space beside a centered
+ring, and a column filling upward reads as a level from across the room.
+
+### D7. Roster CSV import — reduces to "First L." on read
+
+Retyping thirty names per period is why the name picker goes unused; the roster
+already exists in the SIS. `namesFromCsv` reads a header row when present
+(separate first/last columns, or one full-name column), falls back to the first
+column, and handles quoted fields, tabs/semicolons, `Last, First` order, suffixes
+and surname particles (`Peter van Dyke` → `Peter V.`).
+
+**The reduction happens during parse, before anything reaches state or storage.**
+Student IDs, birthdates, guardian emails, and full surnames are discarded in the
+same tick they were read. `file.text()` reads from local disk into the tab —
+there is no upload, no FileReader retention, no request. Now a hard rule in
+`CLAUDE.md`.
+
+### The carve-out on beta framing
+
+**Never label the Testing profile beta.** A teacher forgives a beta
 timer. A proctor does not want a beta clock on exam day, and that audience is the
 site-license flywheel. Beta belongs on the landing page, the Classroom profile,
 and marketing copy — not on the section runner.
@@ -159,9 +212,11 @@ and marketing copy — not on the section runner.
 
 ### Today
 
-1. `npx vercel --prod` — six commits of fixes are still local
-2. Set `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`, `NEXT_PUBLIC_FEEDBACK_ENDPOINT` → redeploy
-3. Browser pass — `launch-verification.md` A–L. **B (pause/resume) and E (mic released)** are unverified by anyone
+1. ~~Set the three env vars~~ — done Aug 6, all three environments
+2. `git push && npx vercel --prod` — the UI fixes above are still local
+3. Browser pass — `launch-verification.md` A–L. **B (pause/resume) and E (mic released)** are unverified by anyone.
+   Add: **CSV import** with a real SIS export, and confirm both docked panels
+   leave the clock visible at projector size
 4. **Capture session** — screen-record: focus block ticking, break transition (the amber→indigo wash is the most watchable thing the app does), two-group extended time, name picker, noise meter
 
 Step 4 gates Pinterest proof pins, the demo GIF, Reels, and a better OG card. One

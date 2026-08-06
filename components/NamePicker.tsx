@@ -5,6 +5,7 @@ import {
   createRoster,
   deleteRoster,
   loadRosters,
+  namesFromCsv,
   parseNames,
   updateRoster,
   type Roster,
@@ -47,8 +48,10 @@ export default function NamePicker({ onClose }: { onClose: () => void }) {
   const [creating, setCreating] = useState(false);
   const [draftName, setDraftName] = useState("");
   const [draftNames, setDraftNames] = useState("");
+  const [importNote, setImportNote] = useState<string | null>(null);
 
   const shuffleRef = useRef<NodeJS.Timeout | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   // localStorage is only touched after mount (SSR-safe).
   useEffect(() => {
@@ -104,11 +107,39 @@ export default function NamePicker({ onClose }: { onClose: () => void }) {
     }, 70);
   }
 
+  /**
+   * Read a CSV/TSV the teacher picked and fill the draft with "First L." names.
+   *
+   * `file.text()` reads from the local disk into this tab — there is no upload
+   * and no request. The reduction happens in namesFromCsv before the result
+   * touches state, so full surnames and every other column in the export are
+   * discarded rather than stored.
+   */
+  async function importCsv(file: File) {
+    setImportNote(null);
+    try {
+      const names = namesFromCsv(await file.text());
+      if (names.length === 0) {
+        setImportNote("Couldn’t find any names in that file. You can paste them below instead.");
+        return;
+      }
+      setDraftNames(names.join("\n"));
+      if (!draftName.trim()) {
+        setDraftName(file.name.replace(/\.[^.]+$/, "").slice(0, 40));
+      }
+      setImportNote(`Imported ${names.length} name${names.length === 1 ? "" : "s"} as “First L.”`);
+      track("roster_csv_imported");
+    } catch {
+      setImportNote("That file couldn’t be read. You can paste the names below instead.");
+    }
+  }
+
   function openCreate() {
     setCreating(true);
     setEditingId(null);
     setDraftName("");
     setDraftNames("");
+    setImportNote(null);
   }
 
   function openEdit(r: Roster) {
@@ -144,22 +175,26 @@ export default function NamePicker({ onClose }: { onClose: () => void }) {
     setEditingId(null);
     setDraftName("");
     setDraftNames("");
+    setImportNote(null);
   }
 
   const inEditor = creating || editingId !== null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
-      <div className="flex w-full max-w-lg flex-col gap-4 rounded-3xl bg-gray-900 p-6 shadow-2xl">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-white">🎲 Name picker</h2>
-            <p className="mt-1 text-sm text-white/50">Pick a student at random.</p>
-          </div>
-          <button onClick={onClose} className="text-2xl leading-none text-white/40 hover:text-white/80">×</button>
-        </div>
+    /*
+      DOCKED LEFT, mirroring the noise meter on the right. Same reasoning: a
+      full-screen modal hid the clock, so "pick someone" was unusable during the
+      block it belongs in. z-20 keeps it under the side rail and the emergency
+      button, and the centered timer stays clear between the two panels.
+    */
+    <div className="fixed left-20 top-1/2 z-20 flex max-h-[90vh] w-72 -translate-y-1/2 flex-col gap-3 overflow-y-auto rounded-3xl border border-white/10 bg-black/50 p-4 shadow-2xl backdrop-blur">
+      <div className="flex items-start justify-between">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-white/70">🎲 Names</h2>
+        <button onClick={onClose} aria-label="Close name picker"
+          className="-mt-1 text-xl leading-none text-white/40 hover:text-white/80">×</button>
+      </div>
 
-        {inEditor ? (
+      {inEditor ? (
           /* ── Roster editor ───────────────────────────────────────── */
           <div className="flex flex-col gap-3">
             <input
@@ -168,14 +203,39 @@ export default function NamePicker({ onClose }: { onClose: () => void }) {
               placeholder="Roster name (e.g. Period 3)"
               className="w-full rounded-xl bg-white/10 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:ring-2 focus:ring-indigo-500"
             />
+
+            {/* CSV import — the roster already exists in the SIS; retyping it is
+                why this feature goes unused. Reduced to "First L." on read. */}
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void importCsv(f);
+                e.target.value = ""; // allow re-picking the same file
+              }}
+            />
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="w-full rounded-xl border border-dashed border-white/20 bg-white/5 px-3 py-2.5 text-xs font-medium text-white/80 transition-all hover:border-white/40 hover:bg-white/10"
+            >
+              ⬆ Import a class list (CSV)
+            </button>
+            {importNote && <p className="text-[11px] leading-snug text-indigo-300">{importNote}</p>}
+
             <textarea
               value={draftNames}
               onChange={(e) => setDraftNames(e.target.value)}
               rows={7}
-              placeholder="Paste one name per line — first names are enough."
+              placeholder="Or paste one name per line — first names are enough."
               className="w-full resize-none rounded-xl bg-white/10 p-3 text-sm text-white outline-none placeholder:text-white/30 focus:ring-2 focus:ring-indigo-500"
             />
-            <p className="text-xs text-white/40">{PRIVACY_LINE}</p>
+            <p className="text-[11px] leading-snug text-white/40">
+              Imported names are shortened to “First L.” as the file is read — surnames, IDs, and every
+              other column are discarded, not stored. {PRIVACY_LINE}
+            </p>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={saveDraft}
@@ -232,9 +292,9 @@ export default function NamePicker({ onClose }: { onClose: () => void }) {
                 </div>
 
                 {/* Projector-legible result */}
-                <div className="flex min-h-[7rem] items-center justify-center rounded-2xl bg-white/5 px-4 py-6 text-center">
+                <div className="flex min-h-[6rem] items-center justify-center rounded-2xl bg-white/5 px-3 py-5 text-center">
                   {picked ? (
-                    <span className={`text-4xl font-bold sm:text-5xl ${shuffling ? "text-white/50" : "text-white"}`}>
+                    <span className={`text-3xl font-bold leading-tight ${shuffling ? "text-white/50" : "text-white"}`}>
                       {picked}
                     </span>
                   ) : (
@@ -254,7 +314,7 @@ export default function NamePicker({ onClose }: { onClose: () => void }) {
                   {shuffling ? "Picking…" : "🎲 Pick"}
                 </button>
 
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
                   <button
                     onClick={() => setNoRepeats((v) => !v)}
                     className={`rounded-full px-3 py-1 font-semibold transition-all ${noRepeats ? "bg-indigo-500/40 text-indigo-100" : "bg-white/10 text-white/60 hover:bg-white/20"}`}
@@ -262,15 +322,14 @@ export default function NamePicker({ onClose }: { onClose: () => void }) {
                     No repeats: {noRepeats ? "On" : "Off"}
                   </button>
                   {noRepeats && selected && (
-                    <span className="text-white/40">{remaining} of {selected.students.length} left this round</span>
+                    <span className="text-white/40">{remaining} of {selected.students.length} left</span>
                   )}
                 </div>
               </>
             )}
-            <p className="text-center text-[11px] text-white/35">{PRIVACY_LINE}</p>
-          </div>
-        )}
-      </div>
+          <p className="text-[10px] leading-snug text-white/35">{PRIVACY_LINE}</p>
+        </div>
+      )}
     </div>
   );
 }

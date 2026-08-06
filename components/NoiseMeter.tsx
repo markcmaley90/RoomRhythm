@@ -27,6 +27,9 @@ const COOLDOWN_MS = 15000; // and no re-trigger within this window
 // Brief dips are forgiven; a genuine drop in volume still cancels.
 const DIP_GRACE_MS = 700;
 
+const RETRY_BTN =
+  "rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-indigo-500";
+
 export default function NoiseMeter({ onClose, muted }: { onClose: () => void; muted: boolean }) {
   const [state, setState] = useState<MeterState>("idle");
   const [level, setLevel] = useState(0); // 0..100, smoothed
@@ -204,45 +207,56 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
   const recentlyChimed = chimedAt !== null && Date.now() - chimedAt < 2500;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
-      <div className="flex w-full max-w-2xl flex-col gap-5 rounded-3xl bg-gray-900 p-6 shadow-2xl">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-white">🔊 Noise meter</h2>
-            <p className="mt-1 text-sm text-white/50">How loud is the room right now?</p>
+    /*
+      DOCKED, NOT MODAL. This used to be `fixed inset-0` over a black scrim,
+      which meant the one tool a teacher reaches for mid-block ("the room is
+      getting loud") blanked out the clock the whole room was watching. So it
+      was only usable when it wasn't needed.
+
+      Now it's a narrow column pinned right of the timer, at z-20: above the
+      room UI, below the side rail (z-30) and the emergency button (z-40). The
+      clock never moves and is never covered. The bar runs vertically because
+      that's the shape of the space beside a centered ring — and because a
+      column filling upward reads as "level" at a glance from across the room.
+    */
+    <div className="fixed right-20 top-1/2 z-20 flex w-60 -translate-y-1/2 flex-col gap-3 rounded-3xl border border-white/10 bg-black/50 p-4 shadow-2xl backdrop-blur">
+      <div className="flex items-start justify-between">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-white/70">🔊 Noise</h2>
+        <button onClick={onClose} aria-label="Close noise meter"
+          className="-mt-1 text-xl leading-none text-white/40 hover:text-white/80">×</button>
+      </div>
+
+      {state === "listening" ? (
+        <>
+          <div className="flex items-baseline justify-between">
+            <span className={`text-xl font-bold ${zoneText}`}>{zoneLabel}</span>
+            {recentlyChimed && (
+              <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-200">
+                🔔 Chimed
+              </span>
+            )}
           </div>
-          <button onClick={onClose} className="text-2xl leading-none text-white/40 hover:text-white/80">×</button>
-        </div>
 
-        {state === "listening" ? (
-          <>
-            <div className="flex items-baseline justify-between">
-              <span className={`text-2xl font-bold ${zoneText}`}>{zoneLabel}</span>
-              {recentlyChimed && (
-                <span className="rounded-full bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-200">
-                  🔔 Chime sent
-                </span>
-              )}
-            </div>
-
-            {/* Big bar, minimal chrome — reads at projector distance */}
-            <div className="relative h-16 w-full overflow-hidden rounded-2xl bg-white/5">
-              <div className="absolute inset-y-0 left-0 bg-emerald-500/10" style={{ width: `${quietEnd}%` }} />
+          {/* Vertical column — fills from the floor up, threshold marked across it. */}
+          <div className="flex justify-center">
+            <div className="relative h-56 w-16 overflow-hidden rounded-2xl bg-white/5">
+              <div className="absolute inset-x-0 bottom-0 bg-emerald-500/10" style={{ height: `${quietEnd}%` }} />
               <div
-                className="absolute inset-y-0 bg-sky-500/10"
-                style={{ left: `${quietEnd}%`, width: `${Math.max(0, threshold - quietEnd)}%` }}
+                className="absolute inset-x-0 bg-sky-500/10"
+                style={{ bottom: `${quietEnd}%`, height: `${Math.max(0, threshold - quietEnd)}%` }}
               />
-              <div className="absolute inset-y-0 right-0 bg-red-500/10" style={{ left: `${threshold}%` }} />
+              <div className="absolute inset-x-0 top-0 bg-red-500/10" style={{ bottom: `${threshold}%` }} />
               <div
-                className={`absolute inset-y-0 left-0 ${fillClass} transition-[width] duration-75`}
-                style={{ width: `${Math.min(100, level)}%` }}
+                className={`absolute inset-x-0 bottom-0 ${fillClass} transition-[height] duration-75`}
+                style={{ height: `${Math.min(100, level)}%` }}
               />
-              <div className="absolute inset-y-0 w-0.5 bg-white/80" style={{ left: `${threshold}%` }} />
+              <div className="absolute inset-x-0 h-0.5 bg-white/80" style={{ bottom: `${threshold}%` }} />
             </div>
+          </div>
 
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center justify-between text-xs text-white/50">
-                <span>Chime when the room stays above</span>
+          <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between text-[11px] text-white/50">
+                <span>Chime above</span>
                 <span className="tabular-nums text-white/70">{Math.round(threshold)}</span>
               </div>
               <input
@@ -264,88 +278,64 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
                     style={{ width: `${Math.round(arming * 100)}%` }}
                   />
                 </div>
-                <span className="w-28 shrink-0 text-right text-[11px] tabular-nums text-white/40">
-                  {arming > 0 ? `chiming in ${Math.ceil(SUSTAIN_MS / 1000 - arming * SUSTAIN_MS / 1000)}s` : "quiet enough"}
+                <span className="w-8 shrink-0 text-right text-[11px] tabular-nums text-white/40">
+                  {arming > 0 ? `${Math.ceil(SUSTAIN_MS / 1000 - (arming * SUSTAIN_MS) / 1000)}s` : "—"}
                 </span>
               </div>
-              <p className="text-[11px] text-white/35">
-                Sounds once after {SUSTAIN_MS / 1000}s above the line, then waits {COOLDOWN_MS / 1000}s.
-                Brief dips won{"’"}t reset it. Muting the room mutes the chime too.
+              <p className="text-[11px] leading-snug text-white/35">
+                Chimes once after {SUSTAIN_MS / 1000}s above the line, then waits {COOLDOWN_MS / 1000}s.
+                Brief dips won{"’"}t reset it.
               </p>
-            </div>
+          </div>
 
-            <button
-              onClick={stop}
-              className="self-start rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-white/20"
-            >
-              Stop listening
-            </button>
-          </>
-        ) : state === "denied" ? (
-          <div className="flex flex-col items-start gap-3 rounded-2xl bg-white/5 p-5">
-            <p className="text-sm text-white/70">
-              Microphone access is blocked, so the meter can&apos;t read the room. You can allow it from
-              your browser&apos;s address bar, then try again — everything else in RoomRhythm works normally.
-            </p>
-            <button
-              onClick={start}
-              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-indigo-500"
-            >
-              Try again
-            </button>
-          </div>
-        ) : state === "nomic" ? (
-          <div className="flex flex-col items-start gap-3 rounded-2xl bg-white/5 p-5">
-            <p className="text-sm text-white/70">
-              No microphone was found on this computer, so the meter can&apos;t read the room. If you have
-              one plugged in, check it&apos;s selected in your system sound settings — everything else in
-              RoomRhythm works normally.
-            </p>
-            <button
-              onClick={start}
-              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-indigo-500"
-            >
-              Try again
-            </button>
-          </div>
-        ) : state === "busy" ? (
-          <div className="flex flex-col items-start gap-3 rounded-2xl bg-white/5 p-5">
-            <p className="text-sm text-white/70">
-              Another app is using the microphone right now — a video call is the usual culprit. Close it
-              and try again; everything else in RoomRhythm works normally.
-            </p>
-            <button
-              onClick={start}
-              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-indigo-500"
-            >
-              Try again
-            </button>
-          </div>
-        ) : state === "unsupported" ? (
-          <div className="flex flex-col items-start gap-3 rounded-2xl bg-white/5 p-5">
-            <p className="text-sm text-white/70">
-              The microphone isn&apos;t available here. This usually means the page is being served over
-              an insecure connection (browsers only allow microphone access over https).
-              Everything else in RoomRhythm works normally.
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col items-start gap-3 rounded-2xl bg-white/5 p-5">
-            <p className="text-sm text-white/70">
-              Uses your device&apos;s microphone to show how loud the room is, and chimes gently when it
-              stays too loud.
-            </p>
-            <button
-              onClick={start}
-              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-indigo-500"
-            >
-              Start listening
-            </button>
-          </div>
-        )}
+          <button
+            onClick={stop}
+            className="rounded-xl bg-white/10 px-3 py-2 text-xs font-medium text-white transition-all hover:bg-white/20"
+          >
+            Stop listening
+          </button>
+        </>
+      ) : state === "denied" ? (
+        <div className="flex flex-col items-start gap-3 rounded-2xl bg-white/5 p-4">
+          <p className="text-xs leading-snug text-white/70">
+            Microphone access is blocked. Allow it from your browser&apos;s address bar, then try
+            again — everything else works normally.
+          </p>
+          <button onClick={start} className={RETRY_BTN}>Try again</button>
+        </div>
+      ) : state === "nomic" ? (
+        <div className="flex flex-col items-start gap-3 rounded-2xl bg-white/5 p-4">
+          <p className="text-xs leading-snug text-white/70">
+            No microphone was found on this computer. If one is plugged in, check it&apos;s selected in
+            your system sound settings.
+          </p>
+          <button onClick={start} className={RETRY_BTN}>Try again</button>
+        </div>
+      ) : state === "busy" ? (
+        <div className="flex flex-col items-start gap-3 rounded-2xl bg-white/5 p-4">
+          <p className="text-xs leading-snug text-white/70">
+            Another app is using the microphone — a video call is the usual culprit. Close it and try
+            again.
+          </p>
+          <button onClick={start} className={RETRY_BTN}>Try again</button>
+        </div>
+      ) : state === "unsupported" ? (
+        <div className="rounded-2xl bg-white/5 p-4">
+          <p className="text-xs leading-snug text-white/70">
+            The microphone isn&apos;t available here. This usually means the page is served over an
+            insecure connection — browsers only allow microphone access over https.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col items-start gap-3 rounded-2xl bg-white/5 p-4">
+          <p className="text-xs leading-snug text-white/70">
+            Shows how loud the room is, and chimes gently when it stays too loud.
+          </p>
+          <button onClick={start} className={RETRY_BTN}>Start listening</button>
+        </div>
+      )}
 
-        <p className="text-center text-[11px] text-white/35">{PRIVACY_LINE}</p>
-      </div>
+      <p className="text-[10px] leading-snug text-white/35">{PRIVACY_LINE}</p>
     </div>
   );
 }

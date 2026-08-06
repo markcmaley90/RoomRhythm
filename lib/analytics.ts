@@ -10,12 +10,16 @@
  * or SSR), so local dev and ad-blocked visitors send nothing and never error.
  */
 
-/** The only six events RoomRhythm reports, with their exact allowed props. */
+/** The only seven events RoomRhythm reports, with their exact allowed props. */
 type EventMap = {
   session_started: { profile: "classroom" | "corporate" | "testing" };
   template_launched: { templateId: string };
   share_link_copied: { surface: "classroom" | "testing_runner" };
   name_picker_used: undefined;
+  // A count is deliberately NOT a prop here. Class size is not something we
+  // need, and the closed map is the whole PII guarantee — it only holds if
+  // nothing roster-derived is ever added to it.
+  roster_csv_imported: undefined;
   noise_meter_started: undefined;
   section_completed: { templateId: string };
 };

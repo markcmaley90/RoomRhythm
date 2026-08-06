@@ -3,10 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAudioEngine, AMBIENT_BEDS, isAmbientFree, type SoundType, type AmbientId } from "@/lib/audio";
+// Decode only. `withShareParam` is still exported from lib/share.ts and still
+// tested — Schedule mode needs it — but nothing writes a share link today.
 import {
   SHARE_PARAM,
   decodeShareConfig,
-  withShareParam,
   type ClassroomShareConfig,
 } from "@/lib/share";
 import NamePicker from "@/components/NamePicker";
@@ -342,31 +343,36 @@ function useFullscreen() {
 // one click away in every mode without competing with the clock for attention.
 // Sits at z-30: above the room UI, below the emergency button (z-40).
 // ══════════════════════════════════════════════════════════════
-function SideRail({ onNames, onNoise, noiseOn }: {
-  onNames: () => void; onNoise: () => void; noiseOn: boolean;
+function SideRail({ onNames, onNoise, namesOn, noiseOn }: {
+  onNames: () => void; onNoise: () => void; namesOn: boolean; noiseOn: boolean;
 }) {
   const btn =
     "group flex w-11 flex-col items-center gap-1 rounded-2xl border border-white/10 " +
-    "bg-black/40 py-3 text-white/60 backdrop-blur transition-all hover:w-auto hover:px-3 " +
+    "bg-black/40 py-3 text-white/60 backdrop-blur transition-all hover:px-3 " +
     "hover:text-white hover:bg-black/70";
+  // Each toggle sits on the edge its panel opens from, so the button and the
+  // thing it summons are never on opposite sides of the room's attention.
   return (
-    <div className="fixed right-4 top-1/2 z-30 flex -translate-y-1/2 flex-col gap-2">
-      <button onClick={onNames} title="Random name picker" className={btn}>
-        <span className="text-lg leading-none">🎲</span>
-        <span className="text-[10px] font-medium uppercase tracking-wider [writing-mode:vertical-rl] group-hover:hidden">
-          Names
-        </span>
-        <span className="hidden text-xs font-medium group-hover:inline">Names</span>
-      </button>
-      <button onClick={onNoise} title="Classroom noise meter"
-        className={`${btn} ${noiseOn ? "border-emerald-400/50 text-emerald-200" : ""}`}>
-        <span className="text-lg leading-none">🔊</span>
-        <span className="text-[10px] font-medium uppercase tracking-wider [writing-mode:vertical-rl] group-hover:hidden">
-          Noise
-        </span>
-        <span className="hidden text-xs font-medium group-hover:inline">Noise</span>
-      </button>
-    </div>
+    <>
+      <div className="fixed left-4 top-1/2 z-30 -translate-y-1/2">
+        <button onClick={onNames} title="Random name picker"
+          className={`${btn} ${namesOn ? "border-indigo-400/50 text-indigo-200" : ""}`}>
+          <span className="text-lg leading-none">🎲</span>
+          <span className="text-[10px] font-medium uppercase tracking-wider [writing-mode:vertical-rl]">
+            Names
+          </span>
+        </button>
+      </div>
+      <div className="fixed right-4 top-1/2 z-30 -translate-y-1/2">
+        <button onClick={onNoise} title="Classroom noise meter"
+          className={`${btn} ${noiseOn ? "border-emerald-400/50 text-emerald-200" : ""}`}>
+          <span className="text-lg leading-none">🔊</span>
+          <span className="text-[10px] font-medium uppercase tracking-wider [writing-mode:vertical-rl]">
+            Noise
+          </span>
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -596,8 +602,16 @@ function ProjectorView({ secondsLeft, label, emoji, nearEnd, totalDuration, onEx
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center z-50 bg-gray-950">
       <button onClick={onExit} className="absolute top-6 right-6 text-white/30 hover:text-white/70 text-sm">✕ Exit Projector</button>
+      {/*
+        The wordmark is the single highest-leverage marketing surface we have —
+        thirty students plus every adult who walks in, an hour a day. It was
+        `text-sm opacity-40` on a near-black field, which renders as a ghost:
+        legible on a laptop at arm's length, invisible on a projector from the
+        back row. Sized and weighted to be readable across a classroom while
+        still losing to the clock for attention.
+      */}
       {showWordmark && (
-        <span className="absolute bottom-6 right-6 text-sm opacity-40 pointer-events-none select-none">
+        <span className="absolute bottom-6 right-8 text-lg font-medium tracking-wide text-white/55 pointer-events-none select-none">
           RoomRhythm · {wordmarkHost()}
         </span>
       )}
@@ -881,8 +895,10 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
   );
   const [autoBreak, setAutoBreak]           = useState(shared ? shared.autoBreak : true);
   const [emergencyActive, setEmergencyActive] = useState(false);
-  const [copied, setCopied]                 = useState(false);
-  const [sharedOnce, setSharedOnce]         = useState(false);
+  // Completed focus blocks this sitting. In-memory only — no storage, resets on
+  // reload. Drives the email ask (>=1) and, later, the feature-suggest prompt
+  // (>=2, docs/13_launch_week.md D3) without needing a localStorage carve-out.
+  const [blocksDone, setBlocksDone]         = useState(0);
   const [showNames, setShowNames]           = useState(false);
   const [showNoise, setShowNoise]           = useState(false);
 
@@ -960,6 +976,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
       warningFiredRef.current = false;
       const m = modeRef.current;
       if (m === "focus") {
+        setBlocksDone((n) => n + 1);
         if (autoBreak) {
           setCurrentBreak(randomBreak(bandIndexRef.current));
           activateMode("break");
@@ -1097,29 +1114,6 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
 
   function selectBand(i: number) { setBandIndex(i); setCustomMinutes(GRADE_BANDS[i].defaultMin); }
 
-  async function copyShareLink() {
-    const cfg: ClassroomShareConfig = {
-      p: "classroom",
-      band: bandIndex,
-      focusSeconds: customMinutes * 60,
-      calmSeconds: calmDuration,
-      autoBreak,
-      sound: soundType,
-    };
-    try {
-      await navigator.clipboard.writeText(withShareParam(window.location.href, cfg));
-      track("share_link_copied", { surface: "classroom" });
-      setCopied(true);
-      // `copied` is only the button's 2-second "✓ Copied!" flash. The email card is
-      // gated on a separate sticky flag — gating it on `copied` would yank the form
-      // away 2 seconds in, mid-typing.
-      setSharedOnce(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard blocked (insecure context / permission) — fail quietly.
-    }
-  }
-
   function handleEmergencyActivate() {
     setEmergencyActive(true);
     stopEmergencyRef.current = startEmergencyAlarm();
@@ -1162,7 +1156,12 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
         <button onClick={() => setProjector(true)} className={CTRL_BTN}>📽 Projector</button>
       </RoomTopBar>
 
-      <SideRail onNames={() => setShowNames(true)} onNoise={() => setShowNoise(true)} noiseOn={showNoise} />
+      <SideRail
+        onNames={() => setShowNames((v) => !v)}
+        onNoise={() => setShowNoise((v) => !v)}
+        namesOn={showNames}
+        noiseOn={showNoise}
+      />
 
       {showFeedback && <FeedbackModal profile="classroom" onClose={() => setShowFeedback(false)} />}
       {pendingMode && (
@@ -1295,17 +1294,18 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
               cover={ambient} onCoverChange={setAmbient}
               accent="bg-indigo-500"
             />
-            <div className="h-px bg-white/10" />
-            <div className="flex flex-col items-center gap-1.5">
-              <button onClick={copyShareLink}
-                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-xs font-medium transition-all">
-                {copied ? "✓ Copied!" : "🔗 Copy share link"}
-              </button>
-              <p className="text-[11px] text-center opacity-50">
-                Anyone with this link opens your exact setup — great for subs and co-teachers.
-              </p>
-              {sharedOnce && <EmailCapture source="share" />}
-            </div>
+            {/*
+              "Copy share link" lived here. Removed deliberately: all it shared
+              was one teacher's slider positions, which the recipient could set
+              in ten seconds themselves. It promised subs and co-teachers a
+              handoff it could not deliver.
+
+              The ENCODING stays (lib/share.ts, SHARE_PARAM, decodeShareConfig,
+              and the `shared` seeding above) — every link already copied still
+              opens correctly, and Schedule mode reintroduces this button as
+              "Copy schedule link", where the payload is a whole period cadence
+              and the handoff is real. See docs/12_build_plan.md phase 4.
+            */}
           </div>
         </div>
       )}
@@ -1324,6 +1324,20 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
             {running ? "⏸ Pause" : "▶ Resume"}
           </button>
           <button onClick={handleReset} className="px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-medium transition-all">↺ Reset</button>
+        </div>
+      )}
+
+      {/*
+        The email ask, at the only moment it's earned: a focus block just ran to
+        completion and the room is between activities. Never on entry — "no
+        login, nothing to install, just open it and teach" is the entire
+        differentiator, and an entry gate would trade it for a slightly longer
+        list. Waits for idle so it can't appear over a running clock, and
+        EmailCapture retires itself for the session on submit or dismiss.
+      */}
+      {mode === "idle" && blocksDone > 0 && (
+        <div className="mt-8 flex justify-center">
+          <EmailCapture source="run_complete" />
         </div>
       )}
 
