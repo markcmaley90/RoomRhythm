@@ -220,10 +220,20 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
       column filling upward reads as "level" at a glance from across the room.
     */
     <div className="fixed right-20 top-1/2 z-20 flex w-60 -translate-y-1/2 flex-col gap-3 rounded-3xl border border-white/10 bg-black/50 p-4 shadow-2xl backdrop-blur">
+      {/*
+        Collapse, not close — mirrors the name picker on the other side.
+
+        Collapsing unmounts this component, which releases the microphone. That
+        is the honest behaviour (a mic held open behind a hidden panel is not
+        something to do quietly), so the tooltip says so rather than implying
+        the meter keeps listening out of sight.
+      */}
       <div className="flex items-start justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-white/70">🔊 Noise</h2>
-        <button onClick={onClose} aria-label="Close noise meter"
-          className="-mt-1 text-xl leading-none text-white/40 hover:text-white/80">×</button>
+        <button onClick={onClose} aria-label="Collapse the noise meter" title="Collapse — releases the microphone"
+          className="-mt-0.5 rounded-lg px-1.5 text-lg leading-none text-white/40 transition-colors hover:bg-white/10 hover:text-white/80">
+          ›
+        </button>
       </div>
 
       {state === "listening" ? (

@@ -188,10 +188,14 @@ export default function NamePicker({ onClose }: { onClose: () => void }) {
       button, and the centered timer stays clear between the two panels.
     */
     <div className="fixed left-20 top-1/2 z-20 flex max-h-[90vh] w-72 -translate-y-1/2 flex-col gap-3 overflow-y-auto rounded-3xl border border-white/10 bg-black/50 p-4 shadow-2xl backdrop-blur">
+      {/* Collapse, not close: the chevron points back at the wall the panel
+          came out of, so it reads as "put this away" rather than "delete". */}
       <div className="flex items-start justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-white/70">🎲 Names</h2>
-        <button onClick={onClose} aria-label="Close name picker"
-          className="-mt-1 text-xl leading-none text-white/40 hover:text-white/80">×</button>
+        <button onClick={onClose} aria-label="Collapse the name picker" title="Collapse"
+          className="-mt-0.5 rounded-lg px-1.5 text-lg leading-none text-white/40 transition-colors hover:bg-white/10 hover:text-white/80">
+          ‹
+        </button>
       </div>
 
       {inEditor ? (

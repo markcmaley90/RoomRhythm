@@ -346,30 +346,39 @@ function useFullscreen() {
 function SideRail({ onNames, onNoise, namesOn, noiseOn }: {
   onNames: () => void; onNoise: () => void; namesOn: boolean; noiseOn: boolean;
 }) {
-  const btn =
-    "group flex w-11 flex-col items-center gap-1 rounded-2xl border border-white/10 " +
-    "bg-black/40 py-3 text-white/60 backdrop-blur transition-all hover:px-3 " +
-    "hover:text-white hover:bg-black/70";
   // Each toggle sits on the edge its panel opens from, so the button and the
-  // thing it summons are never on opposite sides of the room's attention.
+  // thing it summons are never on opposite sides of the room's attention. The
+  // chevron points the way the panel will travel — out toward the clock when
+  // closed, back to the wall when open — so the tab reads as a drawer handle
+  // rather than a mystery icon.
+  const btn =
+    "flex w-14 flex-col items-center gap-1.5 rounded-2xl border border-white/10 " +
+    "bg-black/45 py-4 text-white/70 backdrop-blur transition-all " +
+    "hover:text-white hover:bg-black/70";
   return (
     <>
       <div className="fixed left-4 top-1/2 z-30 -translate-y-1/2">
-        <button onClick={onNames} title="Random name picker"
+        <button onClick={onNames}
+          aria-expanded={namesOn}
+          title={namesOn ? "Hide the name picker" : "Random name picker"}
           className={`${btn} ${namesOn ? "border-indigo-400/50 text-indigo-200" : ""}`}>
-          <span className="text-lg leading-none">🎲</span>
-          <span className="text-[10px] font-medium uppercase tracking-wider [writing-mode:vertical-rl]">
+          <span className="text-2xl leading-none">🎲</span>
+          <span className="text-[11px] font-semibold uppercase tracking-wider [writing-mode:vertical-rl]">
             Names
           </span>
+          <span aria-hidden className="text-sm leading-none opacity-70">{namesOn ? "‹" : "›"}</span>
         </button>
       </div>
       <div className="fixed right-4 top-1/2 z-30 -translate-y-1/2">
-        <button onClick={onNoise} title="Classroom noise meter"
+        <button onClick={onNoise}
+          aria-expanded={noiseOn}
+          title={noiseOn ? "Hide the noise meter" : "Classroom noise meter"}
           className={`${btn} ${noiseOn ? "border-emerald-400/50 text-emerald-200" : ""}`}>
-          <span className="text-lg leading-none">🔊</span>
-          <span className="text-[10px] font-medium uppercase tracking-wider [writing-mode:vertical-rl]">
+          <span className="text-2xl leading-none">🔊</span>
+          <span className="text-[11px] font-semibold uppercase tracking-wider [writing-mode:vertical-rl]">
             Noise
           </span>
+          <span aria-hidden className="text-sm leading-none opacity-70">{noiseOn ? "›" : "‹"}</span>
         </button>
       </div>
     </>
@@ -652,17 +661,13 @@ function ScreenFlash({ trigger }: { trigger: number }) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// KEYBOARD HINT
+// KEYBOARD HINT — removed.
+//
+// The "↑ +5s / ↓ −5s" pill was pinned bottom-center, where it sat directly on
+// top of the "Grade 6–8 · 20 min block" line. The arrow keys still adjust the
+// clock; ±5s are now visible buttons flanking it, with the key shown in their
+// tooltips, so the hint was teaching something the UI already says.
 // ══════════════════════════════════════════════════════════════
-function KeyboardHint() {
-  return (
-    <div className="fixed left-1/2 bottom-6 -translate-x-1/2 flex items-center gap-2 pointer-events-none select-none z-10 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/40">
-      <span className="text-xs font-medium tracking-wide">↑ +5s</span>
-      <span className="w-px h-3 bg-white/15" />
-      <span className="text-xs font-medium tracking-wide">↓ −5s</span>
-    </div>
-  );
-}
 
 // ══════════════════════════════════════════════════════════════
 // SHARED ROOM CHROME — one design language across all three rooms
@@ -673,10 +678,22 @@ const CTRL_BTN =
 
 // Slim top bar: "← Rooms" + accent-tinted profile identity on the left,
 // room-specific controls (passed as children) on the right.
-/** Time-adjust pill, used either side of the running clock. */
+// TIME ADJUSTMENT — two nudges, not five.
+//
+// The ring was flanked by −1m/−5m on the left and +1m/+2m/+5m on the right:
+// five pills competing with the one number the whole room is reading. A
+// teacher does not need five sizes of "wait, a bit longer". Now it's ±5s
+// either side of the clock (matching the ↑/↓ keys, which still work) and a
+// single ±1 minute pair below it.
+/** Small nudge, flanking the clock. */
 const ADJ_BTN =
   "px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 " +
   "text-sm font-semibold tabular-nums transition-all min-w-[3.25rem]";
+
+/** Minute nudge, centered under the clock. */
+const MIN_BTN =
+  "px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 " +
+  "text-sm font-semibold tabular-nums transition-all";
 
 function RoomTopBar({ emoji, name, accentBg, onBack, children }: {
   emoji: string; name: string; accentBg: string; onBack: () => void; children: React.ReactNode;
@@ -1177,8 +1194,6 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
       {showNoise && <NoiseMeter muted={muted} onClose={() => setShowNoise(false)} />}
       <EmergencyButton onActivate={handleEmergencyActivate} onDeactivate={handleEmergencyDeactivate} />
 
-      {running && <KeyboardHint />}
-
       {/* Mode Label */}
       <h1 className={`text-4xl font-bold tracking-tight mb-1 pb-1 ${mode === "idle" ? "bg-gradient-to-r from-indigo-400 to-teal-400 bg-clip-text text-transparent" : ""}`}>
         {config.emoji} {config.label}
@@ -1191,37 +1206,35 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
           looks, not buried at the bottom of the screen. Minus on the left,
           plus on the right, matching how the numbers move. */}
       {secondsLeft > 0 && (
-        <div className="flex items-center justify-center gap-4 sm:gap-8 mb-8">
-          {running && (
-            <div className="flex flex-col gap-2">
-              <button onClick={() => adjustSeconds(-60)} title="Remove one minute"
-                className={ADJ_BTN}>−1m</button>
-              <button onClick={() => adjustSeconds(-300)} title="Remove five minutes"
-                className={ADJ_BTN}>−5m</button>
+        <div className="flex flex-col items-center mb-8">
+          <div className="flex items-center justify-center gap-4 sm:gap-8">
+            {running && (
+              <button onClick={() => adjustSeconds(-5)} title="Five seconds back (↓)"
+                className={ADJ_BTN}>−5s</button>
+            )}
+            <div className="relative flex items-center justify-center">
+              <svg width="240" height="240" className="absolute">
+                <circle cx="120" cy="120" r="108" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
+                <circle cx="120" cy="120" r="108" fill="none"
+                  stroke={nearEnd ? "#f87171" : mode === "break" ? "#34d399" : "#818cf8"}
+                  strokeWidth="6" strokeLinecap="round"
+                  strokeDasharray={`${2 * Math.PI * 108}`}
+                  strokeDashoffset={`${2 * Math.PI * 108 * (1 - (totalDurationRef.current > 0 ? (totalDurationRef.current - secondsLeft) / totalDurationRef.current : 0))}`}
+                  transform="rotate(-90 120 120)" className="transition-all duration-1000" />
+              </svg>
+              <div className={`text-7xl font-mono font-bold tabular-nums transition-all duration-300 ${nearEnd ? "text-red-300 animate-pulse" : ""}`}>
+                {formatTime(secondsLeft)}
+              </div>
             </div>
-          )}
-        <div className="relative flex items-center justify-center">
-          <svg width="240" height="240" className="absolute">
-            <circle cx="120" cy="120" r="108" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
-            <circle cx="120" cy="120" r="108" fill="none"
-              stroke={nearEnd ? "#f87171" : mode === "break" ? "#34d399" : "#818cf8"}
-              strokeWidth="6" strokeLinecap="round"
-              strokeDasharray={`${2 * Math.PI * 108}`}
-              strokeDashoffset={`${2 * Math.PI * 108 * (1 - (totalDurationRef.current > 0 ? (totalDurationRef.current - secondsLeft) / totalDurationRef.current : 0))}`}
-              transform="rotate(-90 120 120)" className="transition-all duration-1000" />
-          </svg>
-          <div className={`text-7xl font-mono font-bold tabular-nums transition-all duration-300 ${nearEnd ? "text-red-300 animate-pulse" : ""}`}>
-            {formatTime(secondsLeft)}
+            {running && (
+              <button onClick={() => adjustSeconds(5)} title="Five seconds more (↑)"
+                className={ADJ_BTN}>+5s</button>
+            )}
           </div>
-        </div>
           {running && (
-            <div className="flex flex-col gap-2">
-              <button onClick={() => adjustSeconds(60)} title="Add one minute"
-                className={ADJ_BTN}>+1m</button>
-              <button onClick={() => adjustSeconds(120)} title="Add two minutes"
-                className={ADJ_BTN}>+2m</button>
-              <button onClick={() => adjustSeconds(300)} title="Add five minutes"
-                className={ADJ_BTN}>+5m</button>
+            <div className="mt-5 flex gap-3">
+              <button onClick={() => adjustSeconds(-60)} className={MIN_BTN}>−1 minute</button>
+              <button onClick={() => adjustSeconds(60)} className={MIN_BTN}>+1 minute</button>
             </div>
           )}
         </div>
@@ -1594,8 +1607,6 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
       )}
       <EmergencyButton onActivate={handleEmergencyActivate} onDeactivate={handleEmergencyDeactivate} />
 
-      {running && <KeyboardHint />}
-
       <h1 className={`text-4xl font-bold tracking-tight mb-1 pb-1 ${mode === "idle" ? "bg-gradient-to-r from-indigo-400 to-teal-400 bg-clip-text text-transparent" : ""}`}>
         {config.emoji} {config.label}
       </h1>
@@ -1603,32 +1614,35 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
 
 
       {secondsLeft > 0 && (
-        <div className="flex items-center justify-center gap-4 sm:gap-8 mb-8">
-          {running && (
-            <div className="flex flex-col gap-2">
-              <button onClick={() => adjustSeconds(-60)} className={ADJ_BTN}>−1m</button>
-              <button onClick={() => adjustSeconds(-300)} className={ADJ_BTN}>−5m</button>
+        <div className="flex flex-col items-center mb-8">
+          <div className="flex items-center justify-center gap-4 sm:gap-8">
+            {running && (
+              <button onClick={() => adjustSeconds(-5)} title="Five seconds back (↓)"
+                className={ADJ_BTN}>−5s</button>
+            )}
+            <div className="relative flex items-center justify-center">
+              <svg width="240" height="240" className="absolute">
+                <circle cx="120" cy="120" r="108" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
+                <circle cx="120" cy="120" r="108" fill="none"
+                  stroke={nearEnd ? "#f87171" : mode === "recharge" ? "#34d399" : "#2dd4bf"}
+                  strokeWidth="6" strokeLinecap="round"
+                  strokeDasharray={`${2 * Math.PI * 108}`}
+                  strokeDashoffset={`${2 * Math.PI * 108 * (1 - (totalDurationRef.current > 0 ? (totalDurationRef.current - secondsLeft) / totalDurationRef.current : 0))}`}
+                  transform="rotate(-90 120 120)" className="transition-all duration-1000" />
+              </svg>
+              <div className={`text-7xl font-mono font-bold tabular-nums transition-all duration-300 ${nearEnd ? "text-red-300 animate-pulse" : ""}`}>
+                {formatTime(secondsLeft)}
+              </div>
             </div>
-          )}
-        <div className="relative flex items-center justify-center">
-          <svg width="240" height="240" className="absolute">
-            <circle cx="120" cy="120" r="108" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
-            <circle cx="120" cy="120" r="108" fill="none"
-              stroke={nearEnd ? "#f87171" : mode === "recharge" ? "#34d399" : "#2dd4bf"}
-              strokeWidth="6" strokeLinecap="round"
-              strokeDasharray={`${2 * Math.PI * 108}`}
-              strokeDashoffset={`${2 * Math.PI * 108 * (1 - (totalDurationRef.current > 0 ? (totalDurationRef.current - secondsLeft) / totalDurationRef.current : 0))}`}
-              transform="rotate(-90 120 120)" className="transition-all duration-1000" />
-          </svg>
-          <div className={`text-7xl font-mono font-bold tabular-nums transition-all duration-300 ${nearEnd ? "text-red-300 animate-pulse" : ""}`}>
-            {formatTime(secondsLeft)}
+            {running && (
+              <button onClick={() => adjustSeconds(5)} title="Five seconds more (↑)"
+                className={ADJ_BTN}>+5s</button>
+            )}
           </div>
-        </div>
           {running && (
-            <div className="flex flex-col gap-2">
-              <button onClick={() => adjustSeconds(60)} className={ADJ_BTN}>+1m</button>
-              <button onClick={() => adjustSeconds(120)} className={ADJ_BTN}>+2m</button>
-              <button onClick={() => adjustSeconds(300)} className={ADJ_BTN}>+5m</button>
+            <div className="mt-5 flex gap-3">
+              <button onClick={() => adjustSeconds(-60)} className={MIN_BTN}>−1 minute</button>
+              <button onClick={() => adjustSeconds(60)} className={MIN_BTN}>+1 minute</button>
             </div>
           )}
         </div>
