@@ -191,7 +191,7 @@ export default function NamePicker({ onClose }: { onClose: () => void }) {
       {/* Collapse, not close: the chevron points back at the wall the panel
           came out of, so it reads as "put this away" rather than "delete". */}
       <div className="flex items-start justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-white/70">🎲 Names</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-white/70">🎲 Pick a name</h2>
         <button onClick={onClose} aria-label="Collapse the name picker" title="Collapse"
           className="-mt-0.5 rounded-lg px-1.5 text-lg leading-none text-white/40 transition-colors hover:bg-white/10 hover:text-white/80">
           ‹

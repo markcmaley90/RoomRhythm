@@ -229,7 +229,7 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
         the meter keeps listening out of sight.
       */}
       <div className="flex items-start justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-white/70">🔊 Noise</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-white/70">🔊 Noise level</h2>
         <button onClick={onClose} aria-label="Collapse the noise meter" title="Collapse — releases the microphone"
           className="-mt-0.5 rounded-lg px-1.5 text-lg leading-none text-white/40 transition-colors hover:bg-white/10 hover:text-white/80">
           ›

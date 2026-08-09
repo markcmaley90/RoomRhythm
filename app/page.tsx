@@ -372,8 +372,11 @@ function SideRail({ onNames, onNoise, namesOn, noiseOn }: {
           className={`${btn} ${namesOn ? "border-indigo-300/60 bg-indigo-900/70 text-indigo-100" : ""}`}>
           <span aria-hidden className={chev}>{namesOn ? "‹" : "›"}</span>
           <span className="text-2xl leading-none">🎲</span>
+          {/* "Names" told you the noun, not the job. A teacher scanning the
+              edge of the screen needs the verb — this is the thing that calls
+              on someone for you. */}
           <span className="text-[11px] font-semibold uppercase tracking-wider [writing-mode:vertical-rl]">
-            Names
+            Pick a name
           </span>
         </button>
       </div>
@@ -385,7 +388,7 @@ function SideRail({ onNames, onNoise, namesOn, noiseOn }: {
           <span aria-hidden className={chev}>{noiseOn ? "›" : "‹"}</span>
           <span className="text-2xl leading-none">🔊</span>
           <span className="text-[11px] font-semibold uppercase tracking-wider [writing-mode:vertical-rl]">
-            Noise
+            Noise level
           </span>
         </button>
       </div>
@@ -402,11 +405,14 @@ function SideRail({ onNames, onNoise, namesOn, noiseOn }: {
 // ══════════════════════════════════════════════════════════════
 function SoundSettings({
   muted, onMuteToggle, soundType, onSoundChange, onPreview, cover, onCoverChange, accent,
+  calmDuration, onCalmChange,
 }: {
   muted: boolean; onMuteToggle: () => void;
   soundType: SoundType; onSoundChange: (s: SoundType) => void; onPreview: (s: SoundType) => void;
   cover: AmbientId; onCoverChange: (a: AmbientId) => void;
   accent: string;
+  /** Calm countdown length. Optional — Corporate has no Calm mode. */
+  calmDuration?: number; onCalmChange?: (s: number) => void;
 }) {
   const [open, setOpen] = useState(false);
   const activeCover = AMBIENT_BEDS.find((b) => b.id === cover);
@@ -438,6 +444,25 @@ function SoundSettings({
             <span className="opacity-50">Cue</span>
             <SoundPicker soundType={soundType} onSoundChange={onSoundChange} onPreview={onPreview} />
           </div>
+
+          {/* Calm is a settle-the-room countdown with a chime — it belongs with
+              the other sound controls, not as a top-level row competing with
+              Focus Duration for the teacher's attention. */}
+          {calmDuration !== undefined && onCalmChange && (
+            <div className="flex items-center justify-between gap-2">
+              <span className="opacity-50">Calm countdown</span>
+              <div className="flex items-center gap-1.5">
+                {[3, 5].map((s) => (
+                  <button key={s} onClick={() => onCalmChange(s)}
+                    className={`px-2.5 py-1 rounded-lg tabular-nums transition-all ${
+                      calmDuration === s ? "bg-indigo-500/40 text-indigo-100" : "bg-white/10 hover:bg-white/20"
+                    }`}>
+                    {s}s
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="h-px bg-white/10" />
 
@@ -1201,7 +1226,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
   if (projector) return <ProjectorView secondsLeft={secondsLeft} label={config.label} emoji={config.emoji} nearEnd={nearEnd} totalDuration={totalDurationRef.current} accent="#818cf8" onExit={() => setProjector(false)} />;
 
   return (
-    <div className={`min-h-screen ${config.bg} ${config.text} flex flex-col items-center justify-center transition-colors duration-700 p-6 pb-28 relative ${emergencyActive ? "ring-8 ring-inset ring-red-500/60" : ""}`}
+    <div className={`min-h-screen ${config.bg} ${config.text} flex flex-col items-center justify-center transition-colors duration-700 px-6 py-4 pb-20 relative ${emergencyActive ? "ring-8 ring-inset ring-red-500/60" : ""}`}
       style={{ backgroundImage: "radial-gradient(ellipse 70% 55% at 50% 34%, rgba(129,140,248,0.14), transparent 72%)" }}>
 
       {/* Calm countdown: amber → indigo */}
@@ -1256,7 +1281,10 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
       <h1 className={`text-4xl font-bold tracking-tight mb-1 pb-1 ${mode === "idle" ? "bg-gradient-to-r from-indigo-400 to-teal-400 bg-clip-text text-transparent" : ""}`}>
         {config.emoji} {config.label}
       </h1>
-      <p className="text-base opacity-60 mb-8">{config.sub}</p>
+      {/* Tighter when idle: the setup card is tall, and Calm / Focus / Break
+          sitting below the fold is the difference between a teacher pressing
+          start and a teacher hunting for start. */}
+      <p className={`text-base opacity-60 ${mode === "idle" ? "mb-4" : "mb-8"}`}>{config.sub}</p>
 
       {/* Timer Ring — hero, flanked by time adjustment.
           "Two more minutes" is the most frequent thing said to a classroom
@@ -1319,7 +1347,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
           and stays untouched. My Periods is Schedule mode — the cadence a
           teacher already has in their head. See docs/12_build_plan.md §1. */}
       {mode === "idle" && (
-        <div className="flex flex-col items-center gap-4 w-full max-w-md mb-6">
+        <div className="flex flex-col items-center gap-3 w-full max-w-md mb-4">
           <div className="flex w-full gap-1 rounded-2xl border border-white/10 bg-white/5 p-1">
             <button onClick={() => setSetupTab("manual")}
               className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
@@ -1365,7 +1393,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
           <div className="grid grid-cols-4 gap-2 w-full">
             {GRADE_BANDS.map((b, i) => (
               <button key={b.label} onClick={() => selectBand(i)}
-                className={`flex flex-col items-center justify-center gap-0.5 py-3 rounded-xl text-sm font-medium border transition-all ${
+                className={`flex flex-col items-center justify-center gap-0 py-2 rounded-xl text-sm font-medium border transition-all ${
                   bandIndex === i ? "bg-indigo-500 border-indigo-400 text-white shadow-lg shadow-indigo-500/25" : "bg-white/10 border-white/15 hover:bg-white/20 hover:border-white/25"
                 }`}>
                 <span className="text-sm font-bold leading-tight">{b.label}</span>
@@ -1374,43 +1402,37 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
               </button>
             ))}
           </div>
-          <div className="w-full bg-slate-900/70 border border-white/10 rounded-2xl p-5 flex flex-col gap-4 shadow-xl">
+          <div className="w-full bg-slate-900/70 border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-xl">
             <div>
-              <div className="flex justify-between items-center mb-2">
+              <div className="flex justify-between items-center mb-1.5">
                 <p className="text-xs opacity-60 uppercase tracking-widest">Focus Duration</p>
                 <p className="font-bold">{customMinutes} min</p>
               </div>
               <input type="range" min={band.sliderMin} max={band.sliderMax} step={1} value={customMinutes}
                 onChange={(e) => setCustomMinutes(Number(e.target.value))} className="w-full accent-indigo-400" />
-              <div className="flex justify-between text-xs opacity-40 mt-1"><span>{band.sliderMin}m</span><span>{band.sliderMax}m</span></div>
-              <p className="text-[11px] text-center mt-3 opacity-60">
+              <div className="flex justify-between text-xs opacity-40 mt-0.5"><span>{band.sliderMin}m</span><span>{band.sliderMax}m</span></div>
+              <p className="text-[11px] text-center mt-2 opacity-60">
                 Presets follow classroom attention-span research
                 <span className="text-indigo-300 font-semibold"> — fully adjustable</span>
               </p>
             </div>
             <div className="h-px bg-white/10" />
-            {/* Break length. Was hard-coded to the band's breakMin — 5 minutes
-                for every grade, unchangeable. A K–2 wiggle break and a 9–12
-                stretch are not the same length. */}
+            {/* Break length and Auto-break share one row — they are the same
+                decision ("what happens when focus ends"), and every extra row
+                here pushes Calm / Focus / Break below the fold on a laptop.
+                Break length used to be hard-coded to the band's breakMin: five
+                minutes for every grade, with no control anywhere. */}
             <div className="flex items-center justify-between gap-3 text-xs flex-wrap">
-              <span className="opacity-50">Break length</span>
               <div className="flex items-center gap-1.5">
+                <span className="mr-1 opacity-50">Break</span>
                 {[2, 3, 5, 10].map((m) => (
                   <button key={m} onClick={() => setBreakMinutes(m)}
-                    className={`px-2.5 py-1 rounded-lg tabular-nums transition-all ${
+                    className={`px-2 py-1 rounded-lg tabular-nums transition-all ${
                       breakMinutes === m ? "bg-emerald-500/40 text-emerald-100" : "bg-white/10 hover:bg-white/20"
                     }`}>
                     {m}m
                   </button>
                 ))}
-              </div>
-            </div>
-            <div className="h-px bg-white/10" />
-            <div className="flex items-center justify-between gap-3 text-xs flex-wrap">
-              <div className="flex items-center gap-2">
-                <span className="opacity-50">Calm</span>
-                <button onClick={() => setCalmDuration(3)} className={`px-2 py-1 rounded-lg transition-all ${calmDuration === 3 ? "bg-indigo-500/40 text-indigo-100" : "bg-white/10 hover:bg-white/20"}`}>3s</button>
-                <button onClick={() => setCalmDuration(5)} className={`px-2 py-1 rounded-lg transition-all ${calmDuration === 5 ? "bg-indigo-500/40 text-indigo-100" : "bg-white/10 hover:bg-white/20"}`}>5s</button>
               </div>
               <div className="flex items-center gap-2">
                 <span className="opacity-50">Auto-break</span>
@@ -1426,6 +1448,7 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
               soundType={soundType} onSoundChange={setSoundType} onPreview={preview}
               cover={ambient} onCoverChange={setAmbient}
               accent="bg-indigo-500"
+              calmDuration={calmDuration} onCalmChange={setCalmDuration}
             />
             {/*
               "Copy share link" lived here. Removed deliberately: all it shared
