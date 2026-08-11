@@ -265,9 +265,21 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
           </div>
 
           <div className="flex flex-col gap-1">
+              {/*
+                "Chime above 60" told a teacher nothing — 60 of what?
+
+                It is NOT decibels and must never be labelled as such: this is
+                RMS from an uncalibrated laptop microphone on an arbitrary
+                0–100 scale. A real dB SPL reading needs a calibrated meter,
+                and every laptop mic and room differs. Printing "dB" would be
+                a made-up number with a scientific-looking unit on it.
+
+                So the scale is named for what it actually is — how loud the
+                room is allowed to get — with the ends labelled and the live
+                bar right above it to set against.
+              */}
               <div className="flex items-center justify-between text-[11px] text-white/50">
-                <span>Chime above</span>
-                <span className="tabular-nums text-white/70">{Math.round(threshold)}</span>
+                <span>Chime when the room gets louder than</span>
               </div>
               <input
                 type="range"
@@ -275,9 +287,14 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
                 max={95}
                 value={threshold}
                 onChange={(e) => setThreshold(Number(e.target.value))}
-                aria-label="Too-loud threshold"
+                aria-label="Room volume level that triggers the chime"
                 className="w-full accent-white"
               />
+              <div className="-mt-1 flex justify-between text-[10px] text-white/35">
+                <span>Silent</span>
+                <span>Quiet work</span>
+                <span>Loud</span>
+              </div>
               {/* Visible arming state. Without this the meter is silent and
                   inscrutable — you can't tell whether it's counting, whether
                   you're over the line, or whether it's in cooldown. */}
@@ -293,8 +310,9 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
                 </span>
               </div>
               <p className="text-[11px] leading-snug text-white/35">
-                Chimes once after {SUSTAIN_MS / 1000}s above the line, then waits {COOLDOWN_MS / 1000}s.
-                Brief dips won{"’"}t reset it.
+                Set it against the bar above — this is a relative level, not decibels, and every
+                room and microphone reads differently. Chimes once after {SUSTAIN_MS / 1000}s over
+                the line, then waits {COOLDOWN_MS / 1000}s. Brief dips won{"’"}t reset it.
               </p>
           </div>
 

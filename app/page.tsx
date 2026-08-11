@@ -372,11 +372,11 @@ function SideRail({ onNames, onNoise, namesOn, noiseOn }: {
           className={`${btn} ${namesOn ? "border-indigo-300/60 bg-indigo-900/70 text-indigo-100" : ""}`}>
           <span aria-hidden className={chev}>{namesOn ? "‹" : "›"}</span>
           <span className="text-2xl leading-none">🎲</span>
-          {/* "Names" told you the noun, not the job. A teacher scanning the
-              edge of the screen needs the verb — this is the thing that calls
-              on someone for you. */}
+          {/* "Random name" over "Pick a name": it's the phrase teachers
+              already search for ("random name picker"), so it matches the
+              words in their head rather than asking them to learn ours. */}
           <span className="text-[11px] font-semibold uppercase tracking-wider [writing-mode:vertical-rl]">
-            Pick a name
+            Random name
           </span>
         </button>
       </div>
@@ -718,10 +718,15 @@ const CTRL_BTN =
 // teacher does not need five sizes of "wait, a bit longer". Now it's ±5s
 // either side of the clock (matching the ↑/↓ keys, which still work) and a
 // single ±1 minute pair below it.
-/** Small nudge, flanking the clock. */
+/**
+ * Small nudge, flanking the clock. Deliberately dimmer than the minute pair
+ * below it — these are the fine adjustment, and nothing beside the clock
+ * should compete with the clock. Each carries its keyboard arrow, which is
+ * how the shortcut gets taught now that the bottom hint pill is gone.
+ */
 const ADJ_BTN =
-  "px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 " +
-  "text-sm font-semibold tabular-nums transition-all min-w-[3.25rem]";
+  "px-3 py-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 " +
+  "text-sm font-medium tabular-nums text-white/50 hover:text-white/90 transition-all min-w-[3.25rem]";
 
 /** Minute nudge, centered under the clock. */
 const MIN_BTN =
@@ -1262,16 +1267,21 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
           onConfirm={confirmPending}
         />
       )}
-      {/* Any contact with a panel pins it — pointer over it or keyboard focus
-          into it both count, so the intro retract can't close something the
-          teacher is mid-way through reading or typing into. */}
+      {/*
+        Pinning is on DELIBERATE contact only — a click or keyboard focus.
+
+        It used to pin on pointer-enter too, which broke the auto-retract
+        outright: the panels are wide and centred vertically, so a cursor
+        resting anywhere near the middle of the screen at load counted as
+        "in use" and they stayed open forever. Hovering is not intent.
+      */}
       {showNames && (
-        <div onPointerEnter={() => setRailPinned(true)} onPointerDown={() => setRailPinned(true)} onFocusCapture={() => setRailPinned(true)}>
+        <div onPointerDown={() => setRailPinned(true)} onFocusCapture={() => setRailPinned(true)}>
           <NamePicker onClose={() => { setRailPinned(true); setShowNames(false); }} />
         </div>
       )}
       {showNoise && (
-        <div onPointerEnter={() => setRailPinned(true)} onPointerDown={() => setRailPinned(true)} onFocusCapture={() => setRailPinned(true)}>
+        <div onPointerDown={() => setRailPinned(true)} onFocusCapture={() => setRailPinned(true)}>
           <NoiseMeter muted={muted} onClose={() => { setRailPinned(true); setShowNoise(false); }} />
         </div>
       )}
@@ -1295,8 +1305,8 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center justify-center gap-4 sm:gap-8">
             {running && (
-              <button onClick={() => adjustSeconds(-5)} title="Five seconds back (↓)"
-                className={ADJ_BTN}>−5s</button>
+              <button onClick={() => adjustSeconds(-5)} title="Five seconds back — or press the down arrow key"
+                className={ADJ_BTN}>↓ −5s</button>
             )}
             <div className="relative flex items-center justify-center">
               <svg width="240" height="240" className="absolute">
@@ -1313,8 +1323,8 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
               </div>
             </div>
             {running && (
-              <button onClick={() => adjustSeconds(5)} title="Five seconds more (↑)"
-                className={ADJ_BTN}>+5s</button>
+              <button onClick={() => adjustSeconds(5)} title="Five seconds more — or press the up arrow key"
+                className={ADJ_BTN}>+5s ↑</button>
             )}
           </div>
           {running && (
@@ -1376,8 +1386,17 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
                 screen runs it in order. Nothing advances without you. Presets for a 50-minute
                 period, a 90-minute block, and an elementary literacy block.
               </p>
+              <div className="mt-3 flex items-start gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                <span className="text-base leading-none">📱</span>
+                <p className="text-xs leading-relaxed text-white/55">
+                  <span className="font-semibold text-white/75">Phone remote, also coming:</span>{" "}
+                  run the projector from your phone while you move around the room. The projector
+                  keeps the clock — the phone only sends instructions, so the room never depends on
+                  your signal.
+                </p>
+              </div>
               <p className="mt-3 text-xs text-white/40">
-                This is what I&apos;m building next. Manual mode keeps working exactly as it does
+                Both are what I&apos;m building next. Manual mode keeps working exactly as it does
                 today, and always will.
               </p>
               <div className="mt-4">
@@ -1762,8 +1781,8 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center justify-center gap-4 sm:gap-8">
             {running && (
-              <button onClick={() => adjustSeconds(-5)} title="Five seconds back (↓)"
-                className={ADJ_BTN}>−5s</button>
+              <button onClick={() => adjustSeconds(-5)} title="Five seconds back — or press the down arrow key"
+                className={ADJ_BTN}>↓ −5s</button>
             )}
             <div className="relative flex items-center justify-center">
               <svg width="240" height="240" className="absolute">
@@ -1780,8 +1799,8 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
               </div>
             </div>
             {running && (
-              <button onClick={() => adjustSeconds(5)} title="Five seconds more (↑)"
-                className={ADJ_BTN}>+5s</button>
+              <button onClick={() => adjustSeconds(5)} title="Five seconds more — or press the up arrow key"
+                className={ADJ_BTN}>+5s ↑</button>
             )}
           </div>
           {running && (
