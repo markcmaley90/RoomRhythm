@@ -119,13 +119,37 @@ default. The stated reason to refuse PostHog:
 The old objection was about PostHog's *defaults*. It is answered by configuration,
 not by hand-waving, and the configuration is now in the repo:
 
-1. **"Cookieless server hash mode"** enabled in PostHog project settings — the
-   SDK writes nothing to cookies or localStorage.
-2. **`person_profiles: "never"`** in `instrumentation-client.ts` — `identify()`
-   becomes a no-op, so no persistent person profile is ever created.
-3. The **closed `EventMap`** in `lib/analytics.ts` survived the swap untouched.
+1. **"Cookieless server hash mode"** enabled in PostHog project settings
+   (Project settings → Web analytics). Required server-side before either
+   client option below does anything.
+2. **`cookieless_mode: "always"`** in `instrumentation-client.ts` — the SDK
+   writes nothing to cookies, localStorage, or sessionStorage.
+3. **`person_profiles: "never"`** in the same file — `identify()` becomes a
+   no-op, so no persistent distinct ID is ever created.
+4. The **closed `EventMap`** in `lib/analytics.ts` survived the swap untouched.
    It remains the structural PII guarantee: there is no free-form props channel,
    so roster data cannot reach the wire even by accident.
+
+**What cookieless mode costs us, and why it matters more here than elsewhere.**
+PostHog counts uniques with `hash(team_id, daily_salt, ip, user_agent, hostname)`.
+Two distortions land on this product from opposite directions:
+
+- **Schools under-count.** Thirty devices behind one NAT, running the same
+  managed browser image, hash identically. A whole classroom can collapse into
+  one "user". This is the single most common deployment we have.
+- **Everything over-counts across days.** The salt rotates daily, so the same
+  teacher on Tuesday and Wednesday is two users. Weekly and monthly uniques are
+  inflated.
+
+**Therefore: never judge this product by unique users.** Judge it by event
+counts — `session_started`, `template_launched` — which are unaffected. This is
+also convenient at launch: bot traffic inflates pageviews, but bots do not start
+timers, so the activation funnel is naturally bot-resistant.
+
+Also lost: GeoIP enrichment (the Web Analytics world map stays empty), bot
+detection, and **session replay and surveys, which are disabled entirely in this
+mode**. The Session Replay product enabled during onboarding is inert — leave it,
+but do not expect recordings.
 
 **These two settings are load-bearing for published marketing copy.** We claim
 "cookieless analytics" in `gtm-launch-kit.md` and "no ads, no trackers" in

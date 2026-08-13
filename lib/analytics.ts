@@ -6,14 +6,17 @@
  * initials, seat numbers, emails, and administration-log contents cannot be
  * passed to `track()` — the compiler rejects them.
  *
- * The no-individual-tracking guarantee has two halves and BOTH are required:
- *   1. `person_profiles: "never"` in instrumentation-client.ts, which makes any
- *      identify() call a no-op so no persistent person profile is ever created.
- *   2. "Cookieless server hash mode" enabled in PostHog project settings, which
- *      stops the SDK writing to cookies or localStorage entirely.
- * Turning either one off silently reintroduces a persistent identifier and
+ * The no-individual-tracking guarantee has THREE parts and all are required:
+ *   1. "Cookieless server hash mode" enabled in PostHog project settings.
+ *   2. `cookieless_mode: "always"` in instrumentation-client.ts.
+ *   3. `person_profiles: "never"` in the same file.
+ * Turning any one off silently reintroduces a persistent identifier and
  * invalidates the privacy claim on the marketing site. Do not change them
  * without updating that copy.
+ *
+ * Read the numbers accordingly: unique-user counts are unreliable in this mode
+ * (see docs/13_launch_week.md D1-R). Event counts are not. Judge launch by
+ * session_started and template_launched, never by "unique users".
  *
  * No-ops safely when posthog has not initialized (env vars unset, script
  * blocked, or SSR), so local dev and ad-blocked visitors never error.
