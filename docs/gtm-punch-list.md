@@ -26,7 +26,7 @@
 | P0-6 Projector wordmark | ✅ Done (commit `c12808a`) |
 | P0-7 Random name picker | ✅ Done (commit `db39e1c`) |
 | P0-8 Noise meter | ✅ Done (commit `5e02320`; synthesized "soft" `SoundType` — no audio files) |
-| P1-9 Plausible analytics | ✅ Done (renders nothing until `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` is set) |
+| P1-9 PostHog analytics | ✅ Done (sends nothing until both `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST` are set). Was Plausible until Aug 12 — see `13_launch_week.md` D1-R. |
 | P1-10 Email capture | ✅ Done (commit `311572d`) |
 | P1-11 Encode strategy into CLAUDE.md | ✅ Done (CLAUDE.md carries positioning + guardrails) |
 | P1-13 Testing runner projector view | ⬜ Not started (surfaced during P0-6; target: before Oct mock-exam push) |
@@ -292,24 +292,27 @@ Show me the component plan and which sound file you chose before writing.
 ## P1-9 · Privacy-friendly analytics
 
 **Goal:** Know what's used without tracking people. Cookieless keeps schools comfortable.
-**Founder dependency:** create a Plausible account first and note your site domain.
-**Files:** `app/layout.tsx`, `lib/analytics.ts`.
+**Founder dependency:** create a PostHog account, then enable "Cookieless server
+hash mode" in project settings **before any traffic arrives**.
+**Files:** `instrumentation-client.ts`, `lib/analytics.ts`.
 
-**Paste into Claude Code:**
+**Shipped Aug 12 — no prompt needed, this is the record of what exists:**
 
-```
-Add Plausible analytics to RoomRhythm. Cookieless, privacy-first, no consent banner needed.
+- `instrumentation-client.ts` initializes PostHog, guarded on both env vars so an
+  unconfigured environment makes no network request at all.
+- `lib/analytics.ts` exposes `track(event, props)` over a **closed `EventMap`** of
+  exactly seven events: `session_started` (profile), `template_launched`
+  (templateId), `share_link_copied` (surface), `name_picker_used`,
+  `roster_csv_imported`, `noise_meter_started`, `section_completed` (templateId).
+- There is deliberately **no free-form props channel**. Roster names, initials,
+  seat numbers, emails, and log contents cannot reach the wire — the compiler
+  rejects them. This is the PII guarantee and it is structural, not policy.
+- `app/layout.tsx` holds no analytics script. Init belongs in
+  `instrumentation-client.ts`.
 
-1. In app/layout.tsx, add the Plausible script tag using next/script (strategy "afterInteractive"), with data-domain read from NEXT_PUBLIC_PLAUSIBLE_DOMAIN. If that env var is unset, render nothing (so local dev sends nothing).
-
-2. Create lib/analytics.ts with a track(eventName, props?) function that safely no-ops when window.plausible is absent. TypeScript-declare window.plausible.
-
-3. Instrument exactly these events and nothing else: "session_started" (props: profile), "template_launched" (props: templateId), "share_link_copied" (props: surface), "name_picker_used" (no props), "noise_meter_started" (no props), "section_completed" (props: templateId). NEVER include roster names, initials, seat numbers, emails, or any log contents in event props.
-
-4. Add NEXT_PUBLIC_PLAUSIBLE_DOMAIN and NEXT_PUBLIC_SITE_URL to a .env.example file with comments.
-
-Show me lib/analytics.ts and the exact call sites before writing.
-```
+**If this is ever re-pointed at another tool:** the transport is confined to the
+body of `track()` plus the init file. All eleven call sites are transport-agnostic
+and must stay that way.
 
 **Acceptance:**
 - [ ] No script/network calls when env var unset
@@ -417,7 +420,7 @@ Spec only — do not scaffold any code or add dependencies.
 ## Founder checklist (not Claude Code)
 
 - [ ] Drop both docs into `/docs`, commit, and upload copies to Drive → GTM docs
-- [ ] Create Plausible account; set `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` (unblocks P1-9)
+- [ ] Create PostHog account; enable cookieless mode; set `NEXT_PUBLIC_POSTHOG_KEY` + `NEXT_PUBLIC_POSTHOG_HOST` in Vercel and redeploy (unblocks P1-9)
 - [ ] Confirm production domain + set `NEXT_PUBLIC_SITE_URL`
 - [ ] Create the 1200×630 `public/og-image.png` (P0-3 leaves a TODO)
 - [ ] Draft 5–8 community posts (FB teacher groups, Pinterest, X) in builder voice — August push

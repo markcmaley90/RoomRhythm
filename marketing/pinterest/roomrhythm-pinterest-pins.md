@@ -155,7 +155,9 @@ Create these four boards first. Pinterest wants pins sorted into topically coher
 ## Before you schedule
 
 Blockers B1–B4 in `docs/13_launch_week.md` must be cleared first — in particular
-`NEXT_PUBLIC_PLAUSIBLE_DOMAIN`, without which none of this batch is attributable.
+the PostHog env vars, without which none of this batch is attributable. Pin URLs
+also need `utm_source=pinterest&utm_medium=pin&utm_content=<board>` — without
+`utm_content` all four boards collapse into one undifferentiated row.
 
 - [x] Real template URLs confirmed against `data/templates/seed.ts`
 - [ ] Set up Pinterest as a **business account** (free, unlocks analytics)

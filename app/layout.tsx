@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -48,23 +47,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const plausibleDomain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        {/* Cookieless analytics. Renders nothing when the env var is unset, so
-            local dev and any unconfigured deploy send no requests at all. */}
-        {plausibleDomain && (
-          <Script
-            defer
-            strategy="afterInteractive"
-            data-domain={plausibleDomain}
-            src="https://plausible.io/js/script.js"
-          />
-        )}
+        {/* Analytics initializes in instrumentation-client.ts, which Next runs
+            before hydration. No script tag belongs here. When the PostHog env
+            vars are unset the init is skipped, so local dev sends nothing. */}
         {children}
       </body>
     </html>

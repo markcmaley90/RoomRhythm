@@ -58,13 +58,20 @@ landing on a paywall is the worst first impression available to us, and there is
 no checkout to convert them with anyway. The Pro landing pages stay public as SEO
 surface — they just aren't where paid ads of attention should point.
 
-### ~~B3. Analytics are blind~~ — CLOSED Aug 6
+### B3. Analytics are blind — REOPENED Aug 12, closed again pending Vercel env vars
 
-`NEXT_PUBLIC_PLAUSIBLE_DOMAIN` is set in Vercel across all three environments and
-`plausible.io/roomrhythm.org` is receiving pageviews. 30-day trial started Aug 6;
-decide on the paid plan in September against real numbers, not a guess. One
-Plausible subscription covers unlimited sites (priced on total pageviews), so
-DealScope/Commons/Groundwork can share it rather than buying separate tools.
+Was closed Aug 6 with Plausible. **Reversed Aug 12 — we moved to PostHog** (see
+D1 below for the reasoning and the conditions that made it acceptable).
+
+Remaining to actually close:
+
+- [ ] `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST` set in Vercel
+      across all three environments, then **redeploy** — env vars bake in at
+      build time, so an existing deploy will not pick them up
+- [ ] "Cookieless server hash mode" enabled in PostHog project settings
+- [ ] Verified on a phone over cell data, not just desktop localhost
+- [ ] **Cancel the Plausible trial before ~Sep 5** or it converts to $9/mo for a
+      tool we no longer load
 
 ### ~~B4. Email capture renders nothing~~ — CLOSED Aug 6
 
@@ -94,24 +101,52 @@ only thing launch week can actually bank.**
 
 ## Four decisions made Aug 6
 
-### D1. Analytics — ship Plausible now, revisit at portfolio scale
+### ~~D1. Analytics — ship Plausible now, revisit at portfolio scale~~ — REVERSED Aug 12
 
-`lib/analytics.ts` and `layout.tsx` are already wired for Plausible with a closed
-event map, and it's cookieless. **Set the env var and move on** — analytics tooling
-must not block launch.
+**Superseded by D1-R below.** Kept for the record because the objection it raised
+was correct and still governs the implementation.
 
-For running several companies off one tool later:
+Original decision: ship Plausible, because `lib/analytics.ts` and `layout.tsx`
+were already wired for it with a closed event map and it is cookieless by
+default. The stated reason to refuse PostHog:
+
+> Our own Instagram card says "No ads, no trackers" and the privacy promise is
+> the positioning. PostHog's **default** configuration would make that claim
+> shaky.
+
+### D1-R. Analytics — PostHog, configured to hold the privacy claim (Aug 12)
+
+The old objection was about PostHog's *defaults*. It is answered by configuration,
+not by hand-waving, and the configuration is now in the repo:
+
+1. **"Cookieless server hash mode"** enabled in PostHog project settings — the
+   SDK writes nothing to cookies or localStorage.
+2. **`person_profiles: "never"`** in `instrumentation-client.ts` — `identify()`
+   becomes a no-op, so no persistent person profile is ever created.
+3. The **closed `EventMap`** in `lib/analytics.ts` survived the swap untouched.
+   It remains the structural PII guarantee: there is no free-form props channel,
+   so roster data cannot reach the wire even by accident.
+
+**These two settings are load-bearing for published marketing copy.** We claim
+"cookieless analytics" in `gtm-launch-kit.md` and "no ads, no trackers" in
+`gtm-social-profiles.md`. If either setting regresses, those public claims become
+false. Treat them as product surface, not configuration.
+
+Why the reversal was worth the churn:
 
 | Tool | Cost | Note |
 |---|---|---|
-| Plausible | $9/mo, **pageview-based** | Already wired. Cost compounds unpredictably across a portfolio. |
-| **Umami Cloud** | **$20/mo flat, unlimited sites** | Cheaper past ~4 properties. Cookieless. Self-host is free (MIT). |
-| PostHog | Free to 1M events/mo | Tempting, but see below. |
+| **PostHog** | **Free to 1M events/mo** | Chosen. Free funnels, and headroom for feature flags at paywall rollout. |
+| Plausible | $9/mo, **pageview-based** | Cost scales with the traffic we are trying to grow, and funnels are a Business-plan feature. |
+| Umami Cloud | $20/mo flat, unlimited sites | Still the answer if the portfolio ever wants one shared tool. |
 
-**Do not take PostHog for RoomRhythm.** Our own Instagram card says "No ads, no
-trackers" and `brand/BRAND.md` commits to cookieless analytics. PostHog's default
-configuration would make that claim shaky, and the privacy promise is the
-positioning. It's a fine choice for the other companies.
+The honest costs we accepted: PostHog ships a materially heavier client script
+than Plausible's ~1–2KB, which matters more here than for a typical web app
+because this runs on classroom projectors over school wifi. And its UI is a
+product suite rather than a dashboard — a time sink if we let it be. **If the
+PostHog UI starts eating afternoons, that is the signal to go back to Plausible.**
+The swap is contained to `lib/analytics.ts` plus one init file; every call site is
+transport-agnostic.
 
 ### D2. Email capture — NOT on entry
 

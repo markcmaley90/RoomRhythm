@@ -13,7 +13,9 @@ flip the switch. Run `npm run dev`, open `http://localhost:3001`.
 - `/sitemap.xml` and `/robots.txt` resolve; sitemap carries real template IDs.
 - FAQPage JSON-LD parses on all 5 template pages, 3 questions each.
 - OG/Twitter metadata present; `public/og-image.png` is exactly 1200×630.
-- Plausible script tag renders only when `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` is set.
+- PostHog sends nothing unless both `NEXT_PUBLIC_POSTHOG_KEY` and
+  `NEXT_PUBLIC_POSTHOG_HOST` are set. No `ph_` cookies appear on the domain —
+  if any do, cookieless mode is off and the published privacy copy is false.
 - Zero user-facing "lane" strings remain in rendered HTML.
 - Locked Pro templates: landing pages stay public (the SEO surface), the runner
   route shows the lock panel. Direct navigation to a locked runner is clean.
@@ -125,7 +127,8 @@ are unclickable. Pick Soft Rain, start a Focus block:
 - [ ] Set `NEXT_PUBLIC_SITE_URL` to it (until then every absolute URL in the
       sitemap, robots.txt, and OG tags points at `localhost:3001`) — **this is a
       hard launch blocker**
-- [ ] Create the Plausible account, set `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`
+- [ ] Create the PostHog account, enable cookieless mode, set
+      `NEXT_PUBLIC_POSTHOG_KEY` + `NEXT_PUBLIC_POSTHOG_HOST`, redeploy
 - [ ] Set `NEXT_PUBLIC_FEEDBACK_ENDPOINT` (Formspree) — without it the feedback
       form falls back to `mailto:` and the email capture renders nothing at all
 - [ ] Back-to-school community posts

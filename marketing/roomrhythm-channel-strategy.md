@@ -100,7 +100,7 @@ Treat r/Teachers as a place to participate for a month before ever posting, if a
 
 **Tracked in `docs/13_launch_week.md` B1–B4.** The two that gate every channel on this page:
 
-- **`NEXT_PUBLIC_PLAUSIBLE_DOMAIN` is unset** — the script never renders, so every channel here is unattributed and next month's decisions get made on vibes.
+- **The PostHog env vars are unset** — analytics never initializes, so every channel here is unattributed and next month's decisions get made on vibes.
 - **`NEXT_PUBLIC_FEEDBACK_ENDPOINT` is unset** — there is no checkout, so the email list is the only thing launch week can actually bank.
 
 **Already shipped — do not rebuild:**
@@ -113,7 +113,7 @@ Treat r/Teachers as a place to participate for a month before ever posting, if a
 ## Review point
 
 Re-evaluate in mid-September — after the Labor Day wave has run, not before:
-- Which channel produced actual signups (requires Plausible)
+- Which channel produced actual signups (requires PostHog + UTM-tagged links)
 - Whether Pinterest impressions have started moving
 - Whether any school domain has hit 5+ users, triggering founder outreach
 - Whether the Facebook groups joined in August are ready to post into

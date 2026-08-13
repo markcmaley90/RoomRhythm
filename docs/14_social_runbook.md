@@ -179,7 +179,7 @@ Business or Creator account linked to a Facebook Page) → optionally connect
 Pinterest for read-only analytics. Free gives 30 days of history, so anything
 you want long-term, screenshot monthly.
 
-**Don't pay yet.** Revisit in September when Plausible and Pinterest analytics
+**Don't pay yet.** Revisit in September when PostHog and Pinterest analytics
 have told you which channel is actually moving. Paying $25/mo to schedule posts
 for an audience you haven't proven is backwards.
 
@@ -250,7 +250,7 @@ not simulated social proof.
 
 | Signal | Where | Read it |
 |---|---|---|
-| Traffic by source | Plausible | Weekly |
+| Traffic by source | PostHog (break the funnel down by `utm_source`) | Weekly |
 | Which pin converts | Pinterest analytics (needs claimed site) | Weekly |
 | Which ask converts | Formspree `source` field — `run_complete` vs `schedule_waitlist` | Weekly |
 | Whether Schedule mode is wanted | count of `schedule_waitlist` | Before starting Phase 3 |

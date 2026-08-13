@@ -15,7 +15,7 @@ The back-to-school adoption window is roughly **Aug 1 – Sep 15**. Southern US 
 
 | Week | Dates | Focus |
 |---|---|---|
-| **W1** | Jul 20–26 | Ship remaining P0 items (P0-2 → P0-8). Founder setup: Plausible account, production domain, OG image. |
+| **W1** | Jul 20–26 | Ship remaining P0 items (P0-2 → P0-8). Founder setup: analytics account (PostHog), production domain, OG image. |
 | **W2** | Jul 27–Aug 2 | **Quiet launch.** Deploy to production. Self-test on a real projector. Record demo GIF/video (§6). Finalize the influencer list (§4). |
 | **W3** | Aug 3–9 | **Community wave 1:** 2 Facebook groups + Pinterest pins live. Send all 10 influencer notes (§4). |
 | **W4** | Aug 10–16 | **Community wave 2:** 2 more FB groups, first Reddit post, X thread. Respond to every comment same-day. |
@@ -185,7 +185,7 @@ Any exam shown on screen must be a teacher-made final or a Mock SAT® template w
 
 Track in one running note, same order every week (strategy §8):
 
-sessions started by profile · template launches by template · share-link copies · email captures and distinct school domains · **domains with 5+ users** (the flywheel metric) · pilot schools committed. Plus two launch-phase extras: which community post drove the biggest traffic spike (Plausible referrers), and influencer responses.
+sessions started by profile · template launches by template · share-link copies · email captures and distinct school domains · **domains with 5+ users** (the flywheel metric) · pilot schools committed. Plus two launch-phase extras: which community post drove the biggest traffic spike (PostHog, broken down by `utm_source`/`utm_content` — plain referrers will not separate one Facebook group from another), and influencer responses.
 
 **Decision rules:** if a post format outperforms 3× → reuse that format for remaining waves. If a community drives zero traffic → don't force wave 2 there. If any school domain hits 5+ before October → send the §5.2 email immediately; don't wait for the "right" moment.
 
@@ -194,7 +194,7 @@ sessions started by profile · template launches by template · share-link copie
 ## 8. Prerequisites checklist (blockers for W2 quiet launch)
 
 - [ ] P0-2 through P0-8 shipped (positioning copy, SEO foundation, template landing pages, share links, wordmark, name picker, noise meter)
-- [ ] P1-9 Plausible live (need referrer data from day one of posting)
+- [ ] P1-9 PostHog live (need referrer data from day one of posting)
 - [ ] P1-10 email capture live (the flywheel needs fuel from post one)
 - [ ] Production domain live + `NEXT_PUBLIC_SITE_URL` set
 - [ ] 1200×630 OG image (posts get shared; the card matters)
