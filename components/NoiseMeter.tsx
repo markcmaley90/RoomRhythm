@@ -248,11 +248,12 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
           </div>
 
           {/* Vertical column — fills from the floor up, threshold marked across it.
-              Shorter than it was: the panel is docked beside a running clock, so
-              its height is a cost paid every second it's open. The bar only has
-              to show a zone and a line, and 176px does that at room distance. */}
+              This is where the height comes from: 224px of bar was most of the
+              panel, and the bar only has to communicate a zone and a line.
+              128px still reads across a room, and a wider column keeps it
+              obvious at a glance. */}
           <div className="flex justify-center">
-            <div className="relative h-44 w-16 overflow-hidden rounded-2xl bg-white/5">
+            <div className="relative h-32 w-20 overflow-hidden rounded-2xl bg-white/5">
               <div className="absolute inset-x-0 bottom-0 bg-emerald-500/10" style={{ height: `${quietEnd}%` }} />
               <div
                 className="absolute inset-x-0 bg-sky-500/10"
@@ -378,12 +379,11 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
         </div>
       )}
 
-      {/* Two lines of privacy text under a docked panel is a lot of height for
-          something read once. The full sentence stays as the title attribute
-          and in the marketing copy; the panel keeps the claim, not the essay. */}
-      <p className="text-[10px] leading-snug text-white/35" title={PRIVACY_LINE}>
-        Analyzed on this device — never recorded.
-      </p>
+      {/* Full sentence, deliberately. This renders in EVERY state including the
+          intro card, so trimming it to save height in the listening view also
+          shrank the first thing a teacher reads about the microphone — the
+          wrong trade. Height comes out of the meter itself instead. */}
+      <p className="text-[10px] leading-snug text-white/35">{PRIVACY_LINE}</p>
     </div>
   );
 }
