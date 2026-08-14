@@ -151,10 +151,11 @@ detection, and **session replay and surveys, which are disabled entirely in this
 mode**. The Session Replay product enabled during onboarding is inert — leave it,
 but do not expect recordings.
 
-**These two settings are load-bearing for published marketing copy.** We claim
+**All four of the above are load-bearing for published marketing copy.** We claim
 "cookieless analytics" in `gtm-launch-kit.md` and "no ads, no trackers" in
-`gtm-social-profiles.md`. If either setting regresses, those public claims become
-false. Treat them as product surface, not configuration.
+`gtm-social-profiles.md`, and CLAUDE.md forbids roster names leaving the device.
+If any one of them regresses, those public claims become false. Treat them as
+product surface, not configuration.
 
 Why the reversal was worth the churn:
 
