@@ -18,7 +18,14 @@ export type EmailCaptureSource =
   | "template_page"
   | "run_complete"
   /** Clicked into the "My Periods" tab — the highest-intent signal we get. */
-  | "schedule_waitlist";
+  | "schedule_waitlist"
+  /**
+   * Hit the small-screen notice on a phone. Distinct from the others because
+   * these people wanted the product and were turned away by their device — the
+   * clearest read we have on how much launch traffic the projector-only
+   * constraint costs us.
+   */
+  | "small_screen";
 
 // One quiet card per surface per session — dismiss OR submit hides it. In-memory
 // only (no cookie, no localStorage); resets on reload.

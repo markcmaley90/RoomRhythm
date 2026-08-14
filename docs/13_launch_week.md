@@ -129,6 +129,18 @@ not by hand-waving, and the configuration is now in the repo:
 4. The **closed `EventMap`** in `lib/analytics.ts` survived the swap untouched.
    It remains the structural PII guarantee: there is no free-form props channel,
    so roster data cannot reach the wire even by accident.
+5. **`autocapture: false`** in `instrumentation-client.ts`, and the matching
+   toggle off in PostHog project settings. PostHog's interaction autocapture is
+   **on by default** and records the text of clicked elements plus the
+   surrounding element tree. `NamePicker` renders a student's name in a span
+   (`components/NamePicker.tsx:301`) and lists roster names as `<option>`s in
+   the `<select>` above it, so autocapture would have shipped roster names to
+   PostHog as `clicked span with text "..."` — bypassing item 4 entirely.
+
+   Item 4 only holds because item 5 is set. The closed `EventMap` governs what
+   *we* send deliberately; autocapture is a second, independent channel that
+   sends things nobody wrote code for. Anyone auditing the roster rule in
+   CLAUDE.md needs to check both.
 
 **What cookieless mode costs us, and why it matters more here than elsewhere.**
 PostHog counts uniques with `hash(team_id, daily_salt, ip, user_agent, hostname)`.
@@ -151,7 +163,7 @@ detection, and **session replay and surveys, which are disabled entirely in this
 mode**. The Session Replay product enabled during onboarding is inert — leave it,
 but do not expect recordings.
 
-**All four of the above are load-bearing for published marketing copy.** We claim
+**All five of the above are load-bearing for published marketing copy.** We claim
 "cookieless analytics" in `gtm-launch-kit.md` and "no ads, no trackers" in
 `gtm-social-profiles.md`, and CLAUDE.md forbids roster names leaving the device.
 If any one of them regresses, those public claims become false. Treat them as

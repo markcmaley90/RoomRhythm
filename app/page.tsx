@@ -14,6 +14,7 @@ import NamePicker from "@/components/NamePicker";
 import NoiseMeter from "@/components/NoiseMeter";
 import { track } from "@/lib/analytics";
 import EmailCapture from "@/components/EmailCapture";
+import SmallScreenNotice from "@/components/SmallScreenNotice";
 
 // ── Types ──────────────────────────────────────────────────────
 type Profile = "selector" | "classroom" | "corporate";
@@ -1894,9 +1895,32 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
 // ══════════════════════════════════════════════════════════════
 // ROOT
 // ══════════════════════════════════════════════════════════════
+/**
+ * Below this width the Classroom and Corporate running screens get the
+ * small-screen notice instead of a layout that was never built to reflow. 640px
+ * is Tailwind's `sm` breakpoint: portrait phones (390–430px) land under it,
+ * landscape phones and every tablet clear it. One constant — move it if real
+ * device data says otherwise.
+ */
+const PROJECTOR_MIN_WIDTH = 640;
+
 export default function Home() {
   const [profile, setProfile] = useState<Profile>("selector");
   const [shared, setShared] = useState<ClassroomShareConfig | null>(null);
+  /** null until measured on the client — never guess during SSR. */
+  const [narrow, setNarrow] = useState<boolean | null>(null);
+  /** Set by "Open it here anyway". In-memory only; resets on reload. */
+  const [override, setOverride] = useState(false);
+
+  // Tracks rotation and resize, not just first paint — turning the phone
+  // sideways should get you the app rather than a stale notice.
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${PROJECTOR_MIN_WIDTH - 1}px)`);
+    const apply = () => setNarrow(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   // A valid ?s= link opens straight into the shared setup. Anything invalid or
   // missing falls through silently to the normal profile picker — never an error.
@@ -1909,7 +1933,27 @@ export default function Home() {
     }
   }, []);
 
-  return profile === "selector" ? <ProfileSelector onSelect={setProfile} />
-    : profile === "classroom" ? <ClassroomApp onBack={() => setProfile("selector")} shared={shared} />
+  if (profile === "selector") return <ProfileSelector onSelect={setProfile} />;
+
+  // Hold the frame until the measurement lands. One tick, and it beats flashing
+  // the wrong screen — which on a phone would mean showing the broken layout we
+  // are here to avoid.
+  if (narrow === null) return <div className="min-h-screen bg-gray-950" />;
+
+  // The notice sits in front of the running screens only. The selector and the
+  // landing copy below it already read fine on a phone and stay reachable, so a
+  // visitor who arrives from a pin can still see what this is before deciding.
+  if (narrow && !override) {
+    return (
+      <SmallScreenNotice
+        profile={profile}
+        onContinue={() => setOverride(true)}
+        onBack={() => setProfile("selector")}
+      />
+    );
+  }
+
+  return profile === "classroom"
+    ? <ClassroomApp onBack={() => setProfile("selector")} shared={shared} />
     : <CorporateApp onBack={() => setProfile("selector")} />;
 }
