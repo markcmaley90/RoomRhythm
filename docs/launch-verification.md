@@ -16,6 +16,16 @@ flip the switch. Run `npm run dev`, open `http://localhost:3001`.
 - PostHog sends nothing unless both `NEXT_PUBLIC_POSTHOG_KEY` and
   `NEXT_PUBLIC_POSTHOG_HOST` are set. No `ph_` cookies appear on the domain —
   if any do, cookieless mode is off and the published privacy copy is false.
+- **Analytics goes out first-party.** `curl -s -o /dev/null -w '%{http_code}'
+  https://roomrhythm.org/ingest/array/<key>/config` returns `200`, and the
+  served bundle contains `api_host:"/ingest"` — not a `*.i.posthog.com` ingest
+  target, which ETP and uBlock block.
+- **The six code-side privacy settings are in the served bundle**, not just the
+  source: `cookieless_mode:"always"`, `person_profiles:"never"`,
+  `autocapture:!1`, `disable_session_recording:!0`, `capture_heatmaps:!1`, plus
+  the closed `EventMap`. The seventh — cookieless server hash mode — is a
+  PostHog dashboard toggle with no client equivalent; confirm it by eye. See
+  `13_launch_week.md` D1-R.
 - Zero user-facing "lane" strings remain in rendered HTML.
 - **The deployed commit matches `origin/main`.** Check the Source hash on the
   live deployment, not just that a deployment exists. Vercel's Git connection
@@ -137,8 +147,9 @@ are unclickable. Pick Soft Rain, start a Focus block:
 - [x] Create the PostHog account, enable cookieless mode, set
       `NEXT_PUBLIC_POSTHOG_KEY` + `NEXT_PUBLIC_POSTHOG_HOST` (Production only),
       redeploy — done Aug 13, project 555510, US Cloud
-- [ ] PostHog managed reverse proxy — Firefox ETP and uBlock block the direct
-      endpoint, so a slice of real visitors is currently invisible
+- [x] Reverse proxy — done Aug 14 via `next.config.ts` rewrites, not PostHog's
+      managed proxy. `/ingest/*` is same-origin, so ETP and uBlock have nothing
+      to match. Baselines before and after Aug 14 are not comparable.
 - [ ] UTM convention applied to every posted link. Untagged traffic cannot be
       re-attributed later, so this precedes the first post, not the first review:
       `?utm_source=facebook&utm_medium=group&utm_campaign=bts26&utm_content=<group>`

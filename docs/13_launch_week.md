@@ -61,7 +61,7 @@ surface — they just aren't where paid ads of attention should point.
 ### ~~B3. Analytics are blind~~ — CLOSED Aug 13 (PostHog live and verified)
 
 Closed Aug 6 with Plausible, reversed Aug 12, **closed again Aug 13 with
-PostHog** (see D1-R for the reasoning and the five settings that hold the
+PostHog** (see D1-R for the reasoning and the seven settings that hold the
 privacy claim).
 
 - [x] `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST` set in Vercel,
@@ -87,9 +87,16 @@ that connection before debugging anything else.**
 Tracking Protection blocked `us-assets.i.posthog.com` outright on our own site.
 uBlock does the same. Those visitors are invisible in the numbers, and for a
 privacy-forward product aimed at schools they are not a random slice — they skew
-toward exactly the audience we court. **Outstanding: PostHog Cloud's free managed
-reverse proxy**, which routes events through our own domain as first-party. Do it
-before the community wave, since it changes the baseline.
+toward exactly the audience we court. **Closed Aug 14** — not with PostHog Cloud's
+managed proxy but with a Next.js rewrite in `next.config.ts`, which costs nothing
+and keeps the region governed by the one env var. `/ingest/*` is same-origin, so
+there is nothing for a blocklist to match. Two rewrites are required: the SDK
+pulls its own bundle from a separate assets host, and proxying only the API
+leaves the script blocked exactly as before. Verified live — the proxied config
+endpoint returns a byte-identical payload to the direct one.
+
+This changes the traffic baseline, so numbers before and after Aug 14 are not
+comparable. It landed before the community wave, which is the point.
 
 ### ~~B4. Email capture renders nothing~~ — CLOSED Aug 6
 
@@ -159,6 +166,23 @@ not by hand-waving, and the configuration is now in the repo:
    *we* send deliberately; autocapture is a second, independent channel that
    sends things nobody wrote code for. Anyone auditing the roster rule in
    CLAUDE.md needs to check both.
+6. **`disable_session_recording: true`** in `instrumentation-client.ts`. Session
+   replay records DOM, and the screens it would record render roster names.
+7. **`capture_heatmaps: false`** in the same file. Heatmaps ship click
+   coordinates and drive a **second `$rageclick` emitter** that is independent
+   of autocapture — the `defaults: "2026-05-30"` preset turns rageclick on.
+
+**Amended Aug 14 — this list was five items and should always have been seven.**
+Items 6 and 7 were true on Aug 13 but only as PostHog *project settings*, which
+is not the same kind of true. A dashboard toggle flips on a click: no commit, no
+diff, nothing for a review to catch. Both are now set in the client as well,
+where client config beats the remote default, so turning either one on requires
+a commit. **The redundancy is deliberate — do not delete them as duplicates.**
+
+That puts six of the seven in this repo. **Item 1 is the exception and cannot be
+fixed the same way:** cookieless server hash mode has no client equivalent, so it
+stays a dashboard toggle and stays the one setting git cannot protect. If the
+privacy claim ever breaks silently, check that toggle first.
 
 **What cookieless mode costs us, and why it matters more here than elsewhere.**
 PostHog counts uniques with `hash(team_id, daily_salt, ip, user_agent, hostname)`.
@@ -181,7 +205,7 @@ detection, and **session replay and surveys, which are disabled entirely in this
 mode**. The Session Replay product enabled during onboarding is inert — leave it,
 but do not expect recordings.
 
-**All five of the above are load-bearing for published marketing copy.** We claim
+**All seven of the above are load-bearing for published marketing copy.** We claim
 "cookieless analytics" in `gtm-launch-kit.md` and "no ads, no trackers" in
 `gtm-social-profiles.md`, and CLAUDE.md forbids roster names leaving the device.
 If any one of them regresses, those public claims become false. Treat them as

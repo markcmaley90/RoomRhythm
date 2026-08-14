@@ -185,7 +185,7 @@ Any exam shown on screen must be a teacher-made final or a Mock SAT® template w
 
 Track in one running note, same order every week (strategy §8):
 
-sessions started by profile · template launches by template · share-link copies · email captures and distinct school domains · **domains with 5+ users** (the flywheel metric) · pilot schools committed. Plus two launch-phase extras: which community post drove the biggest traffic spike (PostHog, broken down by `utm_source`/`utm_content` — plain referrers will not separate one Facebook group from another), and influencer responses.
+sessions started by profile · template launches by template · email captures and distinct school domains · **domains with 5+ users** (the flywheel metric) · pilot schools committed. Plus two launch-phase extras: which community post drove the biggest traffic spike (PostHog, broken down by `utm_source`/`utm_content` — plain referrers will not separate one Facebook group from another), and influencer responses.
 
 **Decision rules:** if a post format outperforms 3× → reuse that format for remaining waves. If a community drives zero traffic → don't force wave 2 there. If any school domain hits 5+ before October → send the §5.2 email immediately; don't wait for the "right" moment.
 
@@ -193,7 +193,7 @@ sessions started by profile · template launches by template · share-link copie
 
 ## 8. Prerequisites checklist (blockers for W2 quiet launch)
 
-- [ ] P0-2 through P0-8 shipped (positioning copy, SEO foundation, template landing pages, share links, wordmark, name picker, noise meter)
+- [ ] P0-2 through P0-8 shipped (positioning copy, SEO foundation, template landing pages, share links **(Testing only — see punch-list P0-5)**, wordmark, name picker, noise meter)
 - [x] P1-9 PostHog live and verified Aug 13 (need referrer data from day one of
       posting — which requires the UTM convention below, not just the tool)
 - [ ] Every link in every post UTM-tagged before it ships. Untagged traffic

@@ -22,7 +22,7 @@
 | P0-2 Positioning & homepage copy | ✅ Done |
 | P0-3 SEO foundation | ✅ Done (og-image.png added in commit `007f979`) |
 | P0-4 Template landing pages | ✅ Done (commit `7e58673`) |
-| P0-5 Shareable session links | ✅ Done (commit `1d0bdd7`) |
+| P0-5 Shareable session links | ✅ Done — **Testing only** (commit `1d0bdd7`). The Classroom button was removed the same day; see `13_launch_week.md` D5. |
 | P0-6 Projector wordmark | ✅ Done (commit `c12808a`) |
 | P0-7 Random name picker | ✅ Done (commit `db39e1c`) |
 | P0-8 Noise meter | ✅ Done (commit `5e02320`; synthesized "soft" `SoundType` — no audio files) |
@@ -170,6 +170,18 @@ Show me the page structure as an outline before writing code, then write it.
 
 ## P0-5 · Shareable session links
 
+> **Shipped for Testing only.** The Classroom copy button was removed the same
+> day it landed — it copied one teacher's slider positions, which a recipient
+> could reproduce in ten seconds, while the copy underneath promised a sub
+> handoff it could not deliver (`13_launch_week.md` D5). `lib/share.ts` is
+> untouched and every link already copied still opens; only the Classroom
+> button is gone. It returns in Phase 4 as **"Copy schedule link"**, where the
+> payload is a whole period cadence and the handoff is real.
+>
+> Consequence for measurement: there is no Classroom share event to count, so
+> share-link copies are not a launch metric (removed from `gtm-launch-kit.md`
+> §7). Do not read the absence as teachers declining to share.
+
 **Goal:** "Send your sub this screen." Config travels in the URL — no backend.
 **Files:** `lib/share.ts`, integration in the main timer setup and Testing runner.
 **Depends on:** Testing MVP section runner.
@@ -306,6 +318,9 @@ Production only. Verified live: events arriving, Person IDs prefixed
   exactly seven events: `session_started` (profile), `template_launched`
   (templateId), `share_link_copied` (surface), `name_picker_used`,
   `roster_csv_imported`, `noise_meter_started`, `section_completed` (templateId).
+  Six of the seven fire. `share_link_copied` fires only with
+  `surface: "testing_runner"` — the `"classroom"` branch is reserved for the
+  Phase 4 "Copy schedule link" button and emits nothing today (P0-5, D5).
 - There is deliberately **no free-form props channel**. Roster names, initials,
   seat numbers, emails, and log contents cannot reach the wire — the compiler
   rejects them. This is the PII guarantee and it is structural, not policy.
