@@ -1309,7 +1309,14 @@ function ClassroomApp({ onBack, shared }: { onBack: () => void; shared?: Classro
               <button onClick={() => adjustSeconds(-5)} title="Five seconds back — or press the down arrow key"
                 className={ADJ_BTN}>↓ −5s</button>
             )}
-            <div className="relative flex items-center justify-center">
+            {/*
+              The ring is absolutely positioned, so this box used to size
+              itself to the TEXT (~72px tall) and let a 240px ring overflow 84px
+              above and below it. On a short window that overflow ran straight
+              through the mode heading — "🌿 Brain Break" sat on the arc.
+              Reserving the ring's own footprint keeps the layout honest.
+            */}
+            <div className="relative flex h-[240px] w-[240px] items-center justify-center">
               <svg width="240" height="240" className="absolute">
                 <circle cx="120" cy="120" r="108" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
                 <circle cx="120" cy="120" r="108" fill="none"
@@ -1785,7 +1792,14 @@ function CorporateApp({ onBack }: { onBack: () => void }) {
               <button onClick={() => adjustSeconds(-5)} title="Five seconds back — or press the down arrow key"
                 className={ADJ_BTN}>↓ −5s</button>
             )}
-            <div className="relative flex items-center justify-center">
+            {/*
+              The ring is absolutely positioned, so this box used to size
+              itself to the TEXT (~72px tall) and let a 240px ring overflow 84px
+              above and below it. On a short window that overflow ran straight
+              through the mode heading — "🌿 Brain Break" sat on the arc.
+              Reserving the ring's own footprint keeps the layout honest.
+            */}
+            <div className="relative flex h-[240px] w-[240px] items-center justify-center">
               <svg width="240" height="240" className="absolute">
                 <circle cx="120" cy="120" r="108" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
                 <circle cx="120" cy="120" r="108" fill="none"

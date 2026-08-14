@@ -75,7 +75,7 @@ def footer(img, cta="Free · No login · In your browser"):
 
 # ── The screenshot placer ──────────────────────────────────────────────────
 def place_shot(img, filename, region, crop=None, radius=26, max_w=SHOT_MAX_W,
-               caption_room=64):
+               caption_room=64, patches=()):
     """
     Drop a screenshot in as a framed window: rounded corners, hairline border,
     soft shadow underneath. `crop` is (l, t, r, b) as 0..1 fractions of the
@@ -90,6 +90,8 @@ def place_shot(img, filename, region, crop=None, radius=26, max_w=SHOT_MAX_W,
     Returns the bottom y of the placed image.
     """
     src = Image.open(os.path.join(SHOTS, filename)).convert("RGB")
+    for box in patches:                      # before cropping — boxes are source pixels
+        patch_out(src, box, from_below=200)
     if crop:
         l, t, r, b = crop
         src = src.crop((int(src.width * l), int(src.height * t),
@@ -120,6 +122,27 @@ def place_shot(img, filename, region, crop=None, radius=26, max_w=SHOT_MAX_W,
     ImageDraw.Draw(img).rounded_rectangle(
         [x, top, x + w - 1, top + h - 1], radius=radius, outline=(64, 64, 70), width=2)
     return top + h
+
+
+def patch_out(src, box, from_below=None):
+    """
+    Clone clean background over a UI element that shouldn't be in a pin.
+
+    The "Suggest a Feature" pill lives in the top-right of every room. Cropping
+    it away pulls the frame off-centre, and leaving a sliver of it looks like a
+    mistake. So we copy a clean patch of the same gradient over it — the room
+    backgrounds are smooth vertical gradients, so a strip taken from directly
+    below the pill matches almost exactly.
+
+    `box` is (l, t, r, b) in SOURCE pixels. `from_below` is how far down to
+    take the donor strip; defaults to just under the box.
+    """
+    l, t, r, b = box
+    h = b - t
+    dy = from_below if from_below is not None else h + 8
+    donor = src.crop((l, t + dy, r, b + dy)).resize((r - l, h), Image.LANCZOS)
+    src.paste(donor, (l, t))
+    return src
 
 
 def caption(img, text, y, size=27):
@@ -172,7 +195,10 @@ def pin_break():
     y = headline(img, ["Brain breaks that", "pick themselves"], 152)
     subline(img, "When focus time ends the screen suggests the break — movement, "
                  "social, or quiet — and starts the clock.", y + 22)
-    b = place_shot(img, BREAK, (470, 1248), crop=(0.02, 0.03, 0.86, 0.82), caption_room=10)
+    # Paint out the "Suggest a Feature" pill rather than cropping it away —
+    # cropping past it pulled the frame off-centre from the clock.
+    b = place_shot(img, BREAK, (470, 1248), crop=(0.045, 0.03, 0.955, 0.82),
+                   caption_room=10, patches=[(845, 0, 1096, 84)])
     footer(img)
     save(img, f"{OUT}/pin-7-brain-breaks.png")
 
