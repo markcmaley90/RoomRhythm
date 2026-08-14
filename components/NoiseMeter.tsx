@@ -247,9 +247,12 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
             )}
           </div>
 
-          {/* Vertical column — fills from the floor up, threshold marked across it. */}
+          {/* Vertical column — fills from the floor up, threshold marked across it.
+              Shorter than it was: the panel is docked beside a running clock, so
+              its height is a cost paid every second it's open. The bar only has
+              to show a zone and a line, and 176px does that at room distance. */}
           <div className="flex justify-center">
-            <div className="relative h-56 w-16 overflow-hidden rounded-2xl bg-white/5">
+            <div className="relative h-44 w-16 overflow-hidden rounded-2xl bg-white/5">
               <div className="absolute inset-x-0 bottom-0 bg-emerald-500/10" style={{ height: `${quietEnd}%` }} />
               <div
                 className="absolute inset-x-0 bg-sky-500/10"
@@ -309,11 +312,23 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
                   {arming > 0 ? `${Math.ceil(SUSTAIN_MS / 1000 - (arming * SUSTAIN_MS) / 1000)}s` : "—"}
                 </span>
               </div>
-              <p className="text-[11px] leading-snug text-white/35">
-                Set it against the bar above — this is a relative level, not decibels, and every
-                room and microphone reads differently. Chimes once after {SUSTAIN_MS / 1000}s over
-                the line, then waits {COOLDOWN_MS / 1000}s. Brief dips won{"’"}t reset it.
-              </p>
+              {/*
+                This was a four-line paragraph sitting open at all times. The
+                "not decibels" point is important enough to keep — a teacher
+                could otherwise repeat a made-up dB figure to an administrator
+                — but it is read once and never again, so it belongs behind a
+                disclosure rather than eating panel height every session.
+              */}
+              <details className="group">
+                <summary className="cursor-pointer list-none text-[11px] text-white/35 transition-colors hover:text-white/60">
+                  How this works <span className="group-open:hidden">▾</span><span className="hidden group-open:inline">▴</span>
+                </summary>
+                <p className="mt-1.5 text-[11px] leading-snug text-white/35">
+                  A relative level, not decibels — every room and microphone reads differently, so
+                  set it against the bar above. Chimes once after {SUSTAIN_MS / 1000}s over the
+                  line, then waits {COOLDOWN_MS / 1000}s. Brief dips won{"’"}t reset it.
+                </p>
+              </details>
           </div>
 
           <button
@@ -363,7 +378,12 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
         </div>
       )}
 
-      <p className="text-[10px] leading-snug text-white/35">{PRIVACY_LINE}</p>
+      {/* Two lines of privacy text under a docked panel is a lot of height for
+          something read once. The full sentence stays as the title attribute
+          and in the marketing copy; the panel keeps the claim, not the essay. */}
+      <p className="text-[10px] leading-snug text-white/35" title={PRIVACY_LINE}>
+        Analyzed on this device — never recorded.
+      </p>
     </div>
   );
 }
