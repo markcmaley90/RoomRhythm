@@ -41,7 +41,16 @@ const host = process.env.NEXT_PUBLIC_POSTHOG_HOST;
 
 if (key && host) {
   posthog.init(key, {
-    api_host: host,
+    // First-party path, NOT `host`. next.config.ts rewrites /ingest/* to the
+    // host in the env var; going direct gets blocked by Firefox ETP and uBlock.
+    // The env var still governs the region and still gates analytics entirely.
+    api_host: "/ingest",
+    // Where the PostHog app itself lives (toolbar links only, never ingest).
+    // Derived from the same var so the region cannot drift.
+    ui_host: host.replace(
+      /^https:\/\/(us|eu)\.i\.posthog\.com$/,
+      "https://$1.posthog.com",
+    ),
     defaults: "2026-05-30",
     cookieless_mode: "always",
     person_profiles: "never",
