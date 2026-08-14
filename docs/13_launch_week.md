@@ -58,20 +58,38 @@ landing on a paywall is the worst first impression available to us, and there is
 no checkout to convert them with anyway. The Pro landing pages stay public as SEO
 surface — they just aren't where paid ads of attention should point.
 
-### B3. Analytics are blind — REOPENED Aug 12, closed again pending Vercel env vars
+### ~~B3. Analytics are blind~~ — CLOSED Aug 13 (PostHog live and verified)
 
-Was closed Aug 6 with Plausible. **Reversed Aug 12 — we moved to PostHog** (see
-D1 below for the reasoning and the conditions that made it acceptable).
+Closed Aug 6 with Plausible, reversed Aug 12, **closed again Aug 13 with
+PostHog** (see D1-R for the reasoning and the five settings that hold the
+privacy claim).
 
-Remaining to actually close:
-
-- [ ] `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST` set in Vercel
-      across all three environments, then **redeploy** — env vars bake in at
-      build time, so an existing deploy will not pick them up
-- [ ] "Cookieless server hash mode" enabled in PostHog project settings
-- [ ] Verified on a phone over cell data, not just desktop localhost
+- [x] `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST` set in Vercel,
+      **Production only** — Preview and Development are us, and our own clicking
+      would move numbers this small. Local dev stays unset in `.env.local`.
+- [x] "Cookieless server hash mode" enabled in PostHog project settings
+- [x] Autocapture disabled at the project level as well as in code
+- [x] Verified: `$pageview` events arriving, Person IDs prefixed `cookieless_`,
+      zero `ph_` cookies on the domain, confirmed from a phone
 - [ ] **Cancel the Plausible trial before ~Sep 5** or it converts to $9/mo for a
       tool we no longer load
+
+**Two things this cost half a day, both worth remembering.**
+
+**Vercel's GitHub connection had silently dropped.** No repository was connected
+under Project Settings → Git, so nothing pushed after Aug 9 (`4127518`) ever
+built. Production served four-day-old code while Deployments looked healthy —
+each manual "Redeploy" faithfully rebuilt the last commit Vercel had ever seen.
+Nothing warns you. **If a change is live in git but absent in the browser, check
+that connection before debugging anything else.**
+
+**Tracker blocking is real and we watched it happen.** Firefox's Enhanced
+Tracking Protection blocked `us-assets.i.posthog.com` outright on our own site.
+uBlock does the same. Those visitors are invisible in the numbers, and for a
+privacy-forward product aimed at schools they are not a random slice — they skew
+toward exactly the audience we court. **Outstanding: PostHog Cloud's free managed
+reverse proxy**, which routes events through our own domain as first-party. Do it
+before the community wave, since it changes the baseline.
 
 ### ~~B4. Email capture renders nothing~~ — CLOSED Aug 6
 

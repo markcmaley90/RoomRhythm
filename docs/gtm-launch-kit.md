@@ -194,7 +194,10 @@ sessions started by profile · template launches by template · share-link copie
 ## 8. Prerequisites checklist (blockers for W2 quiet launch)
 
 - [ ] P0-2 through P0-8 shipped (positioning copy, SEO foundation, template landing pages, share links, wordmark, name picker, noise meter)
-- [ ] P1-9 PostHog live (need referrer data from day one of posting)
+- [x] P1-9 PostHog live and verified Aug 13 (need referrer data from day one of
+      posting — which requires the UTM convention below, not just the tool)
+- [ ] Every link in every post UTM-tagged before it ships. Untagged traffic
+      lands as "direct" and five Facebook groups collapse into one row.
 - [ ] P1-10 email capture live (the flywheel needs fuel from post one)
 - [ ] Production domain live + `NEXT_PUBLIC_SITE_URL` set
 - [ ] 1200×630 OG image (posts get shared; the card matters)

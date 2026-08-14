@@ -292,8 +292,10 @@ Show me the component plan and which sound file you chose before writing.
 ## P1-9 · Privacy-friendly analytics
 
 **Goal:** Know what's used without tracking people. Cookieless keeps schools comfortable.
-**Founder dependency:** create a PostHog account, then enable "Cookieless server
-hash mode" in project settings **before any traffic arrives**.
+**Founder dependency:** ✅ done Aug 13 — PostHog project 555510, US Cloud,
+cookieless server hash mode on, autocapture off, env vars set in Vercel for
+Production only. Verified live: events arriving, Person IDs prefixed
+`cookieless_`, no `ph_` cookies.
 **Files:** `instrumentation-client.ts`, `lib/analytics.ts`.
 
 **Shipped Aug 12 — no prompt needed, this is the record of what exists:**

@@ -17,6 +17,13 @@ flip the switch. Run `npm run dev`, open `http://localhost:3001`.
   `NEXT_PUBLIC_POSTHOG_HOST` are set. No `ph_` cookies appear on the domain —
   if any do, cookieless mode is off and the published privacy copy is false.
 - Zero user-facing "lane" strings remain in rendered HTML.
+- **The deployed commit matches `origin/main`.** Check the Source hash on the
+  live deployment, not just that a deployment exists. Vercel's Git connection
+  dropped silently once (Aug 9–13) and production served stale code for four
+  days while the dashboard looked healthy.
+- Classroom and Corporate on a 390px viewport show the small-screen notice, not
+  a broken projector layout. Launch traffic from Pinterest and Facebook groups
+  is overwhelmingly mobile, so this is a first-impression surface.
 - Locked Pro templates: landing pages stay public (the SEO surface), the runner
   route shows the lock panel. Direct navigation to a locked runner is clean.
 
@@ -127,8 +134,15 @@ are unclickable. Pick Soft Rain, start a Focus block:
 - [ ] Set `NEXT_PUBLIC_SITE_URL` to it (until then every absolute URL in the
       sitemap, robots.txt, and OG tags points at `localhost:3001`) — **this is a
       hard launch blocker**
-- [ ] Create the PostHog account, enable cookieless mode, set
-      `NEXT_PUBLIC_POSTHOG_KEY` + `NEXT_PUBLIC_POSTHOG_HOST`, redeploy
+- [x] Create the PostHog account, enable cookieless mode, set
+      `NEXT_PUBLIC_POSTHOG_KEY` + `NEXT_PUBLIC_POSTHOG_HOST` (Production only),
+      redeploy — done Aug 13, project 555510, US Cloud
+- [ ] PostHog managed reverse proxy — Firefox ETP and uBlock block the direct
+      endpoint, so a slice of real visitors is currently invisible
+- [ ] UTM convention applied to every posted link. Untagged traffic cannot be
+      re-attributed later, so this precedes the first post, not the first review:
+      `?utm_source=facebook&utm_medium=group&utm_campaign=bts26&utm_content=<group>`
+      `?utm_source=pinterest&utm_medium=pin&utm_campaign=bts26&utm_content=<board>`
 - [ ] Set `NEXT_PUBLIC_FEEDBACK_ENDPOINT` (Formspree) — without it the feedback
       form falls back to `mailto:` and the email capture renders nothing at all
 - [ ] Back-to-school community posts
