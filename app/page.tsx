@@ -725,9 +725,14 @@ const CTRL_BTN =
  * should compete with the clock. Each carries its keyboard arrow, which is
  * how the shortcut gets taught now that the bottom hint pill is gone.
  */
+// No chrome. Five pills around one clock read as a control panel; the room is
+// meant to be looking at the number. These stay clickable — a teacher without a
+// keyboard still needs them — but they're printed beside the clock as the label
+// for the arrow keys rather than presented as buttons competing for attention.
+// The ±1 minute pair below keeps its buttons: that's the deliberate action.
 const ADJ_BTN =
-  "px-3 py-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 " +
-  "text-sm font-medium tabular-nums text-white/50 hover:text-white/90 transition-all min-w-[3.25rem]";
+  "px-2 py-2 text-sm font-medium tabular-nums text-white/35 hover:text-white/80 " +
+  "transition-colors min-w-[3.25rem] cursor-pointer select-none";
 
 /** Minute nudge, centered under the clock. */
 const MIN_BTN =
