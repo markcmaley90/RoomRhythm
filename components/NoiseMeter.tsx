@@ -33,7 +33,10 @@ const RETRY_BTN =
 export default function NoiseMeter({ onClose, muted }: { onClose: () => void; muted: boolean }) {
   const [state, setState] = useState<MeterState>("idle");
   const [level, setLevel] = useState(0); // 0..100, smoothed
-  const [threshold, setThreshold] = useState(65); // in-memory only, by decision
+  // 55 on the new decibel-based scale sits just above ordinary conversation,
+  // which is where a teacher actually wants the line. On the old linear scale
+  // the default of 65 was unreachable by any real room.
+  const [threshold, setThreshold] = useState(55); // in-memory only, by decision
   const [chimedAt, setChimedAt] = useState<number | null>(null);
 
   const streamRef = useRef<MediaStream | null>(null);
@@ -97,8 +100,26 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
     let sum = 0;
     for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
     const rms = Math.sqrt(sum / buf.length);
-    const raw = Math.min(100, rms * 300); // room speech lands mid-scale
-    smoothedRef.current = smoothedRef.current * 0.8 + raw * 0.2;
+
+    // LOGARITHMIC, not linear. Hearing is logarithmic; raw RMS is not. The old
+    // `rms * 300` put a quiet room near 3, ordinary talking near 12 and a
+    // genuinely loud class near 35 — so the bar barely moved, the top two
+    // thirds of the scale were unreachable, and the default threshold of 65
+    // could never be crossed by a real room. Mapping decibels-below-full-scale
+    // onto 0–100 spreads a classroom across the whole bar.
+    //
+    // −60 dBFS ≈ an empty quiet room · −45 ≈ heads-down work · −30 ≈ ordinary
+    // conversation · −15 ≈ genuinely loud. Anything under −60 reads as 0.
+    const dbfs = rms > 0 ? 20 * Math.log10(rms) : -100;
+    const raw = Math.max(0, Math.min(100, ((dbfs + 60) / 45) * 100));
+
+    // Asymmetric smoothing: rise fast, fall slow. A symmetric filter made the
+    // bar twitch up and immediately sag, which reads as broken — and it also
+    // meant a loud room kept dipping below the line and resetting the count.
+    // Fast attack tracks the room honestly; slow release holds the level while
+    // it stays loud, which is the thing being measured.
+    const prev = smoothedRef.current;
+    smoothedRef.current = raw > prev ? prev * 0.6 + raw * 0.4 : prev * 0.92 + raw * 0.08;
     const lvl = smoothedRef.current;
     setLevel(lvl);
 
@@ -147,7 +168,26 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
     startingRef.current = true;
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // THE BIG ONE: turn off the browser's voice-call processing.
+      //
+      // getUserMedia({ audio: true }) hands you a stream tuned for video calls:
+      // automatic gain control, noise suppression and echo cancellation are all
+      // on by default. Automatic gain control is the killer — it actively
+      // normalises the signal, boosting a quiet room and pulling a loud one
+      // back down within a second or two. That is exactly the "it spikes then
+      // drops back by itself" behaviour, and no amount of scaling fixes it,
+      // because the browser is undoing the measurement in real time.
+      //
+      // Noise suppression is nearly as bad here: it treats a room full of
+      // overlapping voices as background noise and subtracts it, which is the
+      // signal. We want the raw microphone.
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          autoGainControl: false,
+          noiseSuppression: false,
+          echoCancellation: false,
+        },
+      });
       // The teacher may have closed the meter while the permission prompt was
       // up. Nothing else will release this stream if we don't do it here: the
       // unmount cleanup already ran, and it found streamRef still null.
@@ -164,7 +204,10 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
       const source = ctx.createMediaStreamSource(stream);
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 1024;
-      analyser.smoothingTimeConstant = 0.6;
+      // We do our own asymmetric smoothing in the loop; a second smoothing
+      // stage here only adds lag between the room getting loud and the bar
+      // showing it, which reads as the meter being broken.
+      analyser.smoothingTimeConstant = 0;
       source.connect(analyser); // intentionally not connected to destination
       analyserRef.current = analyser;
       bufRef.current = new Float32Array(analyser.fftSize);
