@@ -20,7 +20,13 @@ const PRIVACY_LINE =
   "Sound is analyzed on this device in real time — nothing is recorded or transmitted.";
 
 const SUSTAIN_MS = 3000; // must stay above threshold this long
-const COOLDOWN_MS = 15000; // and no re-trigger within this window
+// Chime AGAIN while the room stays loud. 15s felt like a single chime that
+// then gave up: a class that ignores the first one hears nothing for a
+// quarter of a minute, which teaches them the screen doesn't follow through.
+// 8s reads as "it's still watching" without becoming an alarm — and the
+// sustain window means it can only repeat while the room is genuinely still
+// over the line, never on a single spike.
+const COOLDOWN_MS = 8000;
 // A classroom is not a steady tone — it dips between syllables and between
 // speakers. Requiring an unbroken 3s above the line meant the accumulator kept
 // resetting on those gaps and the chime almost never fired in a real room.
@@ -281,22 +287,30 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
 
       {state === "listening" ? (
         <>
-          <div className="flex items-baseline justify-between">
+          {/* The arming countdown used to sit in its own row under the slider.
+              It belongs here, next to the zone it qualifies — "Too loud,
+              chiming in 2s" is one thought, not two — and folding it up frees
+              a row for the meter, which is the thing worth looking at. */}
+          <div className="flex items-baseline justify-between gap-2">
             <span className={`text-xl font-bold ${zoneText}`}>{zoneLabel}</span>
-            {recentlyChimed && (
+            {recentlyChimed ? (
               <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-200">
                 🔔 Chimed
               </span>
-            )}
+            ) : arming > 0 ? (
+              <span className="text-[11px] tabular-nums text-amber-300/80">
+                chiming in {Math.ceil(SUSTAIN_MS / 1000 - (arming * SUSTAIN_MS) / 1000)}s
+              </span>
+            ) : null}
           </div>
 
-          {/* Vertical column — fills from the floor up, threshold marked across it.
-              This is where the height comes from: 224px of bar was most of the
-              panel, and the bar only has to communicate a zone and a line.
-              128px still reads across a room, and a wider column keeps it
-              obvious at a glance. */}
+          {/* Vertical column — fills from the floor up, threshold marked across
+              it. The meter gets the height back that the folded-up arming row
+              and the disclosure gave up: it's the one element here that has to
+              be readable from across a room, so it should be the tallest
+              thing in the panel, not a stub above a stack of controls. */}
           <div className="flex justify-center">
-            <div className="relative h-32 w-20 overflow-hidden rounded-2xl bg-white/5">
+            <div className="relative h-52 w-20 overflow-hidden rounded-2xl bg-white/5">
               <div className="absolute inset-x-0 bottom-0 bg-emerald-500/10" style={{ height: `${quietEnd}%` }} />
               <div
                 className="absolute inset-x-0 bg-sky-500/10"
@@ -342,20 +356,6 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
                 <span>Quiet work</span>
                 <span>Loud</span>
               </div>
-              {/* Visible arming state. Without this the meter is silent and
-                  inscrutable — you can't tell whether it's counting, whether
-                  you're over the line, or whether it's in cooldown. */}
-              <div className="flex items-center gap-2">
-                <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/10">
-                  <div
-                    className="h-full rounded-full bg-amber-400 transition-[width] duration-100"
-                    style={{ width: `${Math.round(arming * 100)}%` }}
-                  />
-                </div>
-                <span className="w-8 shrink-0 text-right text-[11px] tabular-nums text-white/40">
-                  {arming > 0 ? `${Math.ceil(SUSTAIN_MS / 1000 - (arming * SUSTAIN_MS) / 1000)}s` : "—"}
-                </span>
-              </div>
               {/*
                 This was a four-line paragraph sitting open at all times. The
                 "not decibels" point is important enough to keep — a teacher
@@ -377,7 +377,7 @@ export default function NoiseMeter({ onClose, muted }: { onClose: () => void; mu
 
           <button
             onClick={stop}
-            className="rounded-xl bg-white/10 px-3 py-2 text-xs font-medium text-white transition-all hover:bg-white/20"
+            className="rounded-lg bg-white/10 px-3 py-1.5 text-[11px] font-medium text-white transition-all hover:bg-white/20"
           >
             Stop listening
           </button>

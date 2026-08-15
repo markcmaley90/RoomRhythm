@@ -158,7 +158,7 @@ def caption(img, text, y, size=27):
 
 # Source screenshots, named so a re-shoot is obvious to re-map.
 FOCUS   = "Screenshot 2026-08-13 232306.png"   # projector, 18:30
-BREAK   = "Screenshot 2026-08-13 232416.png"   # brain break, green
+BREAK   = "82b58445-8168-4f3b-91aa-4c30900292aa-1786776612856_image.png"  # brain break, re-shot Aug 14
 EXAM    = "Screenshot 2026-08-13 232626.png"   # two timing groups
 NAMES   = "Screenshot 2026-08-13 233227.png"   # random name panel
 NOISE   = "Screenshot 2026-08-13 233356.png"   # noise level panel
@@ -197,8 +197,7 @@ def pin_break():
                  "social, or quiet — and starts the clock.", y + 22)
     # Paint out the "Suggest a Feature" pill rather than cropping it away —
     # cropping past it pulled the frame off-centre from the clock.
-    b = place_shot(img, BREAK, (470, 1248), crop=(0.045, 0.03, 0.955, 0.82),
-                   caption_room=10, patches=[(845, 0, 1096, 84)])
+    b = place_shot(img, BREAK, (470, 1248), crop=(0.01, 0.01, 0.99, 0.99), caption_room=10)
     footer(img)
     save(img, f"{OUT}/pin-7-brain-breaks.png")
 
