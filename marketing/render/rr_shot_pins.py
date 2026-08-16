@@ -161,7 +161,7 @@ FOCUS   = "Screenshot 2026-08-13 232306.png"   # projector, 18:30
 BREAK   = "82b58445-8168-4f3b-91aa-4c30900292aa-1786776612856_image.png"  # brain break, re-shot Aug 14
 EXAM    = "Screenshot 2026-08-13 232626.png"   # two timing groups
 NAMES   = "Screenshot 2026-08-13 233227.png"   # random name panel
-NOISE   = "Screenshot 2026-08-13 233356.png"   # noise level panel
+NOISE   = "Screenshot 2026-08-15 192641.png"   # noise panel, re-shot Aug 15 (taller bar, "Too loud")
 
 
 def pin_focus():
@@ -220,7 +220,7 @@ def pin_noise():
     y = headline(img, ["Let the screen ask", "for quiet"], 152)
     subline(img, "Set how loud the room may get. It chimes gently when the room "
                  "stays over the line — not the second it spikes.", y + 22)
-    b = place_shot(img, NOISE, (470, 1248), crop=(0.0, 0.0, 1.0, 0.885), max_w=430)
+    b = place_shot(img, NOISE, (470, 1248), crop=(0.03, 0.02, 0.80, 0.99), max_w=470)
     caption(img, "Analyzed live on your device — never recorded", b + 34)
     footer(img)
     save(img, f"{OUT}/pin-9-noise-level.png")
