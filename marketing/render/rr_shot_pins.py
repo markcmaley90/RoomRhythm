@@ -74,8 +74,35 @@ def footer(img, cta="Free · No login · In your browser"):
 
 
 # ── The screenshot placer ──────────────────────────────────────────────────
+def center_content(src, tol=14):
+    """
+    Trim uneven background so the UI sits centred inside the frame.
+
+    Hand-tuned crop fractions cannot do this. Every crop I set by eye was off
+    by 30–70px — the panel sat visibly to one side of its own window and every
+    pin had it. Measuring beats judging: find the bounding box of everything
+    that differs from the corner background colour, then shave the wider
+    margin down to match the narrower one on each axis.
+
+    Only ever removes background. If a shot is full-bleed with no margin, the
+    min margin is 0 and nothing moves.
+    """
+    g = src.convert("L")
+    w, h = g.size
+    px = g.load()
+    bg = px[1, 1]
+    cols = [x for x in range(w) if any(abs(px[x, y] - bg) > tol for y in range(0, h, 4))]
+    rows = [y for y in range(h) if any(abs(px[x, y] - bg) > tol for x in range(0, w, 4))]
+    if not cols or not rows:
+        return src
+    left, right = cols[0], w - 1 - cols[-1]
+    top, bottom = rows[0], h - 1 - rows[-1]
+    mx, my = min(left, right), min(top, bottom)
+    return src.crop((left - mx, top - my, w - (right - mx), h - (bottom - my)))
+
+
 def place_shot(img, filename, region, crop=None, radius=26, max_w=SHOT_MAX_W,
-               caption_room=64, patches=()):
+               caption_room=64, patches=(), auto_center=True):
     """
     Drop a screenshot in as a framed window: rounded corners, hairline border,
     soft shadow underneath. `crop` is (l, t, r, b) as 0..1 fractions of the
@@ -96,6 +123,8 @@ def place_shot(img, filename, region, crop=None, radius=26, max_w=SHOT_MAX_W,
         l, t, r, b = crop
         src = src.crop((int(src.width * l), int(src.height * t),
                         int(src.width * r), int(src.height * b)))
+    if auto_center:
+        src = center_content(src)
 
     r_top, r_bot = region
     max_h = (r_bot - r_top) - caption_room
